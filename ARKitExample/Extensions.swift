@@ -100,6 +100,35 @@ extension UIPageControl {
 }
 
 extension UIView {
+
+	func pinEdges(to view: UIView, insets: UIEdgeInsets = .zero) {
+		translatesAutoresizingMaskIntoConstraints = false
+		NSLayoutConstraint.activate([
+			topAnchor.constraint(equalTo: view.topAnchor, constant: insets.top),
+			leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: insets.left),
+			trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -insets.right),
+			bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -insets.bottom),
+		])
+	}
+
+	func pinEdges(to layoutGuide: UILayoutGuide, insets: UIEdgeInsets = .zero) {
+		translatesAutoresizingMaskIntoConstraints = false
+		NSLayoutConstraint.activate([
+			topAnchor.constraint(equalTo: layoutGuide.topAnchor, constant: insets.top),
+			leadingAnchor.constraint(equalTo: layoutGuide.leadingAnchor, constant: insets.left),
+			trailingAnchor.constraint(equalTo: layoutGuide.trailingAnchor, constant: -insets.right),
+			bottomAnchor.constraint(equalTo: layoutGuide.bottomAnchor, constant: -insets.bottom),
+		])
+	}
+
+	static func barView(cornerRadius: CGFloat = 1) -> UIView {
+		let bar = UIView()
+		bar.backgroundColor = .white
+		bar.layer.cornerRadius = cornerRadius
+		bar.layer.masksToBounds = true
+		return bar
+	}
+
 	func fadeTransition(_ duration:CFTimeInterval) {
 		let animation = CATransition()
 		animation.timingFunction = CAMediaTimingFunction(name:

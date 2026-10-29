@@ -26,6 +26,8 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
     override func viewDidLoad() {
         super.viewDidLoad()
 
+		installViewHierarchy()
+
         Setting.registerDefaults()
         setupScene()
         setupDebug()
@@ -56,10 +58,6 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 
 		setupGlobe()
 		
-		autoplayButton.layer.borderWidth = 2
-		autoplayButton.layer.borderColor = UIColor.white.cgColor
-		autoplayButton.layer.cornerRadius = autoplayButton.frame.size.width / 2
-
 		// Prevent the screen from being dimmed after a while.
 		UIApplication.shared.isIdleTimerDisabled = true
 		
@@ -70,12 +68,35 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 		if UserDefaults.standard.bool(for: .showIntroductionOnStartup) {
 			presentIntroduction()
 		}
-		
+
 	}
 	
 	override func viewWillDisappear(_ animated: Bool) {
 		super.viewWillDisappear(animated)
 		session.pause()
+	}
+
+	override func updateViewConstraints() {
+		applyMenuChromeOcclusionConstraintsIfNeeded()
+		super.updateViewConstraints()
+	}
+
+	override func viewSafeAreaInsetsDidChange() {
+		super.viewSafeAreaInsetsDidChange()
+		view.setNeedsUpdateConstraints()
+	}
+
+	override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+		super.traitCollectionDidChange(previousTraitCollection)
+		view.setNeedsUpdateConstraints()
+	}
+
+	override func viewDidLayoutSubviews() {
+		super.viewDidLayoutSubviews()
+		updateGlobeTimeSliderLayout(preserveYear: true)
+		if introductionScrollView != nil {
+			updateIntroductionScrollLayout()
+		}
 	}
 	
 	
@@ -93,7 +114,7 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 		}
 	}
 	var use3DOFTrackingFallback = false
-    @IBOutlet var sceneView: ARSCNView!
+ var sceneView: ARSCNView!
 	var screenCenter: CGPoint?
     
     func setupScene() {
@@ -359,12 +380,6 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 	}
 	
 	override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-//		if virtualObject == nil {
-////			chooseObject(addObjectButton)
-//			loadVirtualObject(at: 0)
-//			return
-//		}
-
 		if globeState == .loaded {
 			placeGlobe()
 		}
@@ -373,9 +388,6 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 	}
 	
 	override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
-//		if virtualObject == nil {
-//			return
-//		}
 		currentGesture = currentGesture?.updateGestureFromTouches(touches, .touchCancelled)
 	}
 	
@@ -534,25 +546,8 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
     }
 
 	func resetVirtualObject() {
-		
 		initialCameraPosition = nil
-		
-//		virtualObject?.unloadModel()
-//		virtualObject?.removeFromParentNode()
-//		virtualObject = nil
-//
-//		addObjectButton.setImage(#imageLiteral(resourceName: "add"), for: [])
-//		addObjectButton.setImage(#imageLiteral(resourceName: "addPressed"), for: [.highlighted])
-//
-//		// Reset selected object id for row highlighting in object selection view controller.
-//		UserDefaults.standard.set(-1, for: .selectedObjectID)
-		
-//		for childNode in self.sceneView.scene.rootNode.childNodes {
-//			childNode.removeFromParentNode()
-//		}
-		
 		resetGlobe()
-		
 	}
 	
 	func updateVirtualObjectPosition(_ pos: SCNVector3, _ filterPosition: Bool) {
@@ -636,46 +631,30 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 		didSet {
 			DispatchQueue.main.async {
 //				self.settingsButton.isEnabled = !self.isLoadingObject
-//				self.addObjectButton.isEnabled = !self.isLoadingObject
-				self.screenshotButton.isEnabled = !self.isLoadingObject
 				self.restartExperienceButton.isEnabled = !self.isLoadingObject
 			}
 		}
 	}
 	
-//	@IBOutlet weak var addObjectButton: UIButton!
-	
 	func loadVirtualObject(at index: Int, placeObject: Bool = true) {
-//		resetVirtualObject()
-		
 		debugPrint("\(#function)")
 		
 		// Show progress indicator
 		let spinner = UIActivityIndicatorView()
 		spinner.style = .whiteLarge
-//		spinner.center = addObjectButton.center
 		spinner.center = view.center
-//		spinner.bounds.size = CGSize(width: button.bounds.width - 5, height: addObjectButton.bounds.height - 5)
-//		addObjectButton.setImage(#imageLiteral(resourceName: "buttonring"), for: [])
 		sceneView.addSubview(spinner)
 		spinner.startAnimating()
 		
 		// Load the content asynchronously.
 		DispatchQueue.global().async {
 			self.isLoadingObject = true
-//			let object = Globe()// VirtualObject.availableObjects[index]
 			self.globe.viewController = self
 			self.virtualObject = self.globe
 
-//			debugPrint("Virtual object is globe: \(object is Globe)")
 			debugPrint("ARCamera exists: \(self.session.currentFrame?.camera != nil)")
 			
-//			if let globe = object as? Globe, let camera = self.session.currentFrame?.camera {
-//				globe.loadModel(camera: camera)
-//			}
-//			else {
-				self.globe.loadModel()
-//			}
+			self.globe.loadModel()
 			
 			DispatchQueue.main.async {
 				// Immediately place the object in 3D space.
@@ -710,12 +689,19 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 	
 	// MARK: - Globe
 	
-	@IBOutlet weak var globeControlPanel: UIView!
-	@IBOutlet weak var timeScrollView: UIScrollView!
-	@IBOutlet weak var focusTimeScrollView: UIScrollView!
-	@IBOutlet weak var autoplayButton: UIButton!
-	@IBOutlet weak var climatePolicySimulationPanel: UIView!
-	@IBOutlet weak var climatePolicySwitch: UISwitch!
+	var globeControlPanel: UIView!
+	var timeScrollView: UIScrollView!
+	var focusTimeScrollView: UIScrollView!
+	var timeScrollWrapper: UIView!
+	var focusScrollWrapper: UIView!
+	var climatePolicySimulationPanel: UIView!
+	var climatePolicySwitch: UISwitch!
+
+	var globeTimeSliderContentInstalled = false
+	var lastGlobeTimeSliderLayoutWidth: CGFloat = 0
+	var timeScrollGradientMask: CAGradientLayer?
+	var focusScrollGradientMask: CAGradientLayer?
+	var focusScrollBackgroundLayer: CAGradientLayer?
 	
 	var globeState = GlobeState.loading
 	var autoplayTimer: Timer? = nil {
@@ -732,51 +718,9 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 	func setupGlobe() {
 		globeState = .loading
 		loadVirtualObject(at: 0, placeObject: false)
-		
-		let padding = self.timeScrollView.frame.size.width / 2 - 40
-		var offset = padding
-		var contentRect = CGRect.zero
-		for i in 0...35 {
-			let yearLabel = UILabel(frame: CGRect(x: offset, y: 4, width: 80, height: 28))
-			yearLabel.text = "\((175 + i)*10)"
-//			yearLabel.font = UIFont.systemFont(ofSize: 17)
-//			yearLabel.font = UIFont(name: "Rubik-Light", size: 17)
-			yearLabel.font = UIFont.rubik(.light, size: 26)
-			yearLabel.textColor = .white
-			yearLabel.textAlignment = .center
-			contentRect = contentRect.union(yearLabel.frame)
-			self.timeScrollView.addSubview(yearLabel)
-
-			let focusYearLabel = yearLabel.clone()
-			focusYearLabel.textColor = .black
-			self.focusTimeScrollView.addSubview(focusYearLabel)
-			
-			offset += 80
-		}
-		contentRect.size.width += padding
-		self.timeScrollView.contentSize = contentRect.size
-		
-		let gradientMask = CAGradientLayer()
-		gradientMask.frame = self.timeScrollView.superview!.bounds
-		gradientMask.startPoint = CGPoint(x: 0.0, y: 0.5)
-		gradientMask.endPoint = CGPoint(x: 1.0, y: 0.5)
-		
-		let relativeFocusRectWidth = 77 / gradientMask.frame.size.width
-		let focusRectStart = NSNumber(value: Float(0.5 - relativeFocusRectWidth / 2))
-		let focusRectEnd = NSNumber(value: Float(0.5 + relativeFocusRectWidth / 2))
-		debugPrint("gradientMask.frame = \(gradientMask.frame)")
-		gradientMask.locations = [0, focusRectStart, focusRectStart, focusRectEnd, focusRectEnd, 1]
-		gradientMask.colors = [UIColor.clear.cgColor, UIColor.black.cgColor, UIColor.clear.cgColor, UIColor.clear.cgColor, UIColor.black.cgColor, UIColor.clear.cgColor]
-		self.timeScrollView.superview!.layer.mask = gradientMask
-
-		let focusMask = gradientMask.clone()
-		focusMask.colors = [UIColor.clear.cgColor, UIColor.clear.cgColor, UIColor.black.cgColor, UIColor.black.cgColor, UIColor.clear.cgColor, UIColor.clear.cgColor]
-		self.focusTimeScrollView.superview!.layer.mask = focusMask
-
-		let focusBackgroundLayer = gradientMask.clone()
-		focusBackgroundLayer.colors = [UIColor.clear.cgColor, UIColor.clear.cgColor, UIColor(hexString: "7294b4").withAlphaComponent(0.6).cgColor, UIColor(hexString: "949ab0").withAlphaComponent(0.6).cgColor, UIColor.clear.cgColor, UIColor.clear.cgColor]
-		self.focusTimeScrollView.superview!.layer.insertSublayer(focusBackgroundLayer, at: 0)
-		
+		let preserveScrollYear = globeTimeSliderContentInstalled
+		installGlobeTimeSliderContentIfNeeded()
+		updateGlobeTimeSliderLayout(preserveYear: preserveScrollYear)
 	}
 	
 	func placeGlobe() {
@@ -816,7 +760,8 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 			globeState = .loaded
 		}
 		
-		timeScrollView.setContentOffset(.zero, animated: false)
+		currentYear = 0
+		updateGlobeTimeSliderLayout(preserveYear: false)
 		
 		globeControlPanel.isUserInteractionEnabled = false
 		UIView.animate(withDuration: 0.5, animations: {
@@ -940,54 +885,6 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 		globe.setYear(currentYear)
 	}
 	
-	@IBAction func autoplayButtonPressed(_ sender: Any) {
-		
-		if autoplayTimer != nil {
-			stopAutoplay()
-		}
-
-		else {
-			startAutoplay()
-		}
-	}
-	
-	func startAutoplay() {
-		
-		autoplayButton.setTitle("◼︎", for: .normal)
-		autoplayButton.contentEdgeInsets = UIEdgeInsets.init(top: 0, left: 0, bottom: 5, right: 0)
-		
-//		let scrollViewLeftToTravel = timeScrollView.contentSize.width - timeScrollView.contentOffset.x - timeScrollView.frame.size.width
-		let labelWidth = timeScrollView.subviews.first?.frame.size.width ?? 80
-		
-//		debugPrint("Animating with duration \(TimeInterval(scrollViewLeftToTravel/labelWidth))")
-
-		let autoplayInterval: TimeInterval = 1
-		let autoplayStep = labelWidth * 0.4 * CGFloat(autoplayInterval)
-		
-		autoplayTimer = Timer.scheduledTimer(withTimeInterval: autoplayInterval, repeats: true, block: { (_) in
-			var newRect = self.timeScrollView.bounds
-			newRect.origin.x += min(autoplayStep, self.timeScrollView.contentSize.width - self.timeScrollView.frame.size.width - self.timeScrollView.contentOffset.x)
-			UIView.animate(withDuration: autoplayInterval, delay: 0, options: UIView.AnimationOptions.curveLinear, animations: {
-				self.timeScrollView.scrollRectToVisible(newRect, animated: false)
-			}, completion: { (_) in
-				self.setGlobe()
-			})
-			if (self.timeScrollView.contentSize.width - self.timeScrollView.frame.size.width - self.timeScrollView.contentOffset.x /*< autoplayStep*/ <= 0) {
-				self.stopAutoplay()
-			}
-		})
-		autoplayTimer?.fire()
-		
-	}
-	
-	func stopAutoplay() {
-		autoplayButton.setTitle("▶︎", for: .normal)
-		autoplayButton.contentEdgeInsets = UIEdgeInsets.init(top: 0, left: 4, bottom: 0, right: 0)
-		
-		autoplayTimer = nil
-//		timeScrollView.layer.removeAllAnimations()
-	}
-	
     // MARK: - Planes
 	
 	var planes = [ARPlaneAnchor: Plane]()
@@ -1058,14 +955,14 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 		if globe.parent != nil { return }
 		
 		var timestamp = Date()
-		timestamp = print(intervalSince: timestamp, string: "    Flag1")
+//		timestamp = print(intervalSince: timestamp, string: "    Flag1")
 		guard let screenCenter = screenCenter else { return }
-		timestamp = print(intervalSince: timestamp, string: "    Flag2")
+//		timestamp = print(intervalSince: timestamp, string: "    Flag2")
 		var insideFrustum = false
 		if let coreGlobe = globe.coreGlobe {
 			insideFrustum = sceneView.isNode(coreGlobe, insideFrustumOf: sceneView.pointOfView!)
 		}
-		timestamp = print(intervalSince: timestamp,	 string: "    Flag3")
+//		timestamp = print(intervalSince: timestamp,	 string: "    Flag3")
 		if insideFrustum {
 			focusSquare?.hide()
 		} else {
@@ -1098,7 +995,7 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 	
     // MARK: - Debug Visualizations
 	
-	@IBOutlet var featurePointCountLabel: UILabel!
+ var featurePointCountLabel: UILabel!
 	
 	func refreshFeaturePoints() {
 		guard showDebugVisuals else {
@@ -1141,9 +1038,9 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
     
     // MARK: - UI Elements and Actions
 	
-	@IBOutlet weak var messagePanel: UIView!
-	@IBOutlet weak var messageLabel: UILabel!
-	@IBOutlet weak var debugMessageLabel: UILabel!
+	var messagePanel: UIView!
+	var messageLabel: UILabel!
+	var debugMessageLabel: UILabel!
 	
 	var textManager: TextManager!
 	
@@ -1158,10 +1055,10 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 		messageLabel.text = ""
     }
 	
-	@IBOutlet weak var restartExperienceButton: UIButton!
+	var restartExperienceButton: UIButton!
 	var restartExperienceButtonIsEnabled = true
 	
-	@IBAction func restartExperience(_ sender: Any) {
+	@objc func restartExperience(_ sender: Any) {
 		
 		guard restartExperienceButtonIsEnabled, !isLoadingObject else {
 			return
@@ -1190,54 +1087,16 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 		}
 	}
 	
-	@IBOutlet weak var screenshotButton: UIButton!
-	
-	@IBAction func takeScreenshot() {
-		guard screenshotButton.isEnabled else {
-			return
-		}
-		
-		let takeScreenshotBlock = {
-			UIImageWriteToSavedPhotosAlbum(self.sceneView.snapshot(), nil, nil, nil)
-			DispatchQueue.main.async {
-				// Briefly flash the screen.
-				let flashOverlay = UIView(frame: self.sceneView.frame)
-				flashOverlay.backgroundColor = UIColor.white
-				self.sceneView.addSubview(flashOverlay)
-				UIView.animate(withDuration: 0.25, animations: {
-					flashOverlay.alpha = 0.0
-				}, completion: { _ in
-					flashOverlay.removeFromSuperview()
-				})
-			}
-		}
-		
-		switch PHPhotoLibrary.authorizationStatus() {
-		case .authorized, .limited:
-			takeScreenshotBlock()
-		case .restricted, .denied:
-			let title = "Photos access denied"
-			let message = "Please enable Photos access for this application in Settings > Privacy to allow saving screenshots."
-			textManager.showAlert(title: title, message: message)
-		case .notDetermined:
-			PHPhotoLibrary.requestAuthorization({ (authorizationStatus) in
-				if authorizationStatus == .authorized {
-					takeScreenshotBlock()
-				}
-			})
-		}
-	}
-
     // MARK: - Thermometer
     
-	@IBOutlet weak var thermometerPanel: UIView!
-	@IBOutlet weak var thermometerContainer: UIView!
-    @IBOutlet weak var thermometerMercury: UIImageView!
-    @IBOutlet weak var thermometerInnerGlow: UIImageView!
-	@IBOutlet weak var thermometerCO2CounterPanel: UIView!
-	@IBOutlet weak var thermometerCO2CounterLabel: UILabel!
-	@IBOutlet weak var thermometerThreshold1DegPanel: UIView!
-	@IBOutlet weak var thermometerThreshold2DegPanel: UIView!
+	var thermometerPanel: UIView!
+	var thermometerContainer: UIView!
+	var thermometerMercury: UIImageView!
+	var thermometerInnerGlow: UIImageView!
+	var thermometerCO2CounterPanel: UIView!
+	var thermometerCO2CounterLabel: UILabel!
+	var thermometerThreshold1DegPanel: UIView!
+	var thermometerThreshold2DegPanel: UIView!
 	
 //    let maxBudget: CGFloat = 6_562_688
 	
@@ -1285,14 +1144,15 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 		return climatePolicySwitch.isOn ? Const.globalCarbonAccumulated26 : Const.globalCarbonAccumulatedBASE
 	}
 	
-	@IBAction func climatePolicySimulationSwitchValueChanged(_ sender: UISwitch) {
-		self.setThermometer()
-		self.globe.setYear(self.currentYear, climateSimulation: sender.isOn)
+	@objc func climatePolicySimulationSwitchValueChanged(_ sender: UISwitch) {
+		climatePolicySwitch.layer.borderWidth = climatePolicySwitch.isOn ? 0 : 2
+		setThermometer()
+		globe.setYear(self.currentYear, climateSimulation: sender.isOn)
 	}
 	
 	// MARK: - Overlays
 	
-	@IBOutlet weak var overlayBackground: UIButton!
+	var overlayBackground: UIButton!
 	var overlayIsActive = false
 	
 	enum Overlay {
@@ -1316,7 +1176,7 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 		}
 	}
 	
-	@IBAction func dismissOverlay(_ sender: Any) {
+	@objc func dismissOverlay(_ sender: Any) {
 		switch activeOverlay {
 		case .menu:
 			dismissMenu()
@@ -1332,45 +1192,34 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 	
 	// MARK: - Menu
 	
-	@IBOutlet weak var menuContainer: UIView!
-	@IBOutlet weak var menuContainerHeight: NSLayoutConstraint!
-	@IBOutlet var menuView: UIView!
-	@IBOutlet var menuPanel: UIView!
-	@IBOutlet weak var menuSwitchDisplayLocalData: UISwitch!
+	var menuView: UIView!
+	var menuPanel: UIView!
+	var menuFirstRowButton: UIButton!
+	var menuHiddenBottomConstraint: NSLayoutConstraint!
+	var menuExposedTopConstraint: NSLayoutConstraint!
+	var menuExposedFirstRowTopConstraint: NSLayoutConstraint!
+	var isMenuViewConstraintsInstalled = false
+	var menuSwitchDisplayLocalData: UISwitch!
 	
-	@IBOutlet weak var menuButtonBars: UIView!
-	@IBOutlet weak var menuButtonBarTop: UIView!
-	@IBOutlet weak var menuButtonBarCenter0: UIView!
-	@IBOutlet weak var menuButtonBarCenter1: UIView!
-	@IBOutlet weak var menuButtonBarBottom: UIView!
-	
-	var topInset: CGFloat { return max(20, UIApplication.shared.keyWindow?.safeAreaInsets.top ?? 0) }
-	var menuHiddenPosition: CGFloat {
-		debugPrint("menuHiddenPosition: \(menuContainerHeight.constant) - \(menuView.frame.size.height) + \(topInset) = \(menuContainerHeight.constant - menuView.frame.size.height + topInset)")
-		return menuContainerHeight.constant - menuView.frame.size.height + topInset }
-//	var menuShowingPosition: CGFloat { return -topInset }
+	var menuButton: UIButton!
+	var visibleMenuButton: UIView!
+	var visibleMenuButtonTopConstraint: NSLayoutConstraint!
+	var visibleMenuButtonTrailingConstraint: NSLayoutConstraint!
+	var menuButtonBarTop: UIView!
+	var menuButtonBarCenter0: UIView!
+	var menuButtonBarCenter1: UIView!
+	var menuButtonBarBottom: UIView!
 	
 	func setupMenu() {
-		menuView.frame.size.width = view.frame.size.width
-		menuView.frame.origin.y = menuHiddenPosition
-		menuContainer.addSubview(menuView)
-		
-		menuPanel.alpha = 0
-		
+		installMenuViewConstraintsIfNeeded()
+		setMenuExposed(false, animated: false)
 		menuSwitchDisplayLocalData.isOn = UserDefaults.standard.bool(for: .displayLocalData)
 	}
-	
-	func presentMenu() {
-		
-		activeOverlay = .menu
 
-		debugPrint("\(#function)")
-		UIView.animate(withDuration: 0.5) {
-			self.menuView.frame.origin.y = -self.topInset
-			self.menuPanel.alpha = 1
-			self.menuContainerHeight.constant = self.menuView.frame.size.height + self.topInset
-		}
-		
+	func presentMenu() {
+		activeOverlay = .menu
+		setMenuExposed(true, animated: true)
+
 		UIView.animate(withDuration: 0.25) {
 			self.menuButtonBarTop.alpha = 0
 			self.menuButtonBarTop.frame.origin.y = 14
@@ -1379,16 +1228,10 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 			self.menuButtonBarBottom.alpha = 0
 			self.menuButtonBarBottom.frame.origin.y = 14
 		}
-		
 	}
-	
-	func dismissMenu() {
 
-		self.menuContainerHeight.constant = 25
-		UIView.animate(withDuration: 0.5) {
-			self.menuView.frame.origin.y = self.menuHiddenPosition
-			self.menuPanel.alpha = 0
-		}
+	func dismissMenu() {
+		setMenuExposed(false, animated: true)
 
 		UIView.animate(withDuration: 0.25) {
 			self.menuButtonBarTop.alpha = 1
@@ -1398,10 +1241,9 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 			self.menuButtonBarBottom.alpha = 1
 			self.menuButtonBarBottom.frame.origin.y = 18
 		}
-		
 	}
 
-	@IBAction func menuButtonPressed(_ sender: UIButton) {
+	@objc func menuButtonPressed(_ sender: UIButton) {
 		if activeOverlay == .none {
 			presentMenu()
 		}
@@ -1410,21 +1252,21 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 		}
 	}
 
-	@IBAction func menuButtonIntroPressed(_ sender: Any) {
+	@objc func menuButtonIntroPressed(_ sender: Any) {
 		dismissMenu()
 		Timer.scheduledTimer(withTimeInterval: 0.25, repeats: false) { (_) in
 			self.presentIntroduction()
 		}
 	}
 	
-	@IBAction func menuButtonCreditsPressed(_ sender: Any) {
+	@objc func menuButtonCreditsPressed(_ sender: Any) {
 		dismissMenu()
 		Timer.scheduledTimer(withTimeInterval: 0.25, repeats: false) { (_) in
 			self.presentCredits()
 		}
 	}
 	
-	@IBAction func menuSwitchDisplayLocalDataValueChanged(_ sender: UISwitch) {
+	@objc func menuSwitchDisplayLocalDataValueChanged(_ sender: UISwitch) {
 		
 		UserDefaults.standard.set(sender.isOn, for: .displayLocalData)
 		
@@ -1433,48 +1275,66 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 //		}
 	}
 
-	@IBAction func menuButtonRestartExperiencePressed(_ sender: Any) {
+	@objc func menuButtonRestartExperiencePressed(_ sender: Any) {
 		restartExperience(sender)
 		dismissOverlay(sender)
 	}
 
 	// MARK: - Introduction
 	
-	@IBOutlet weak var introductionPanel: UIView!
-	@IBOutlet weak var introductionScrollView: UIScrollView!
-	@IBOutlet weak var introductionPageControl: UIPageControl!
-	@IBOutlet weak var showIntroductionOnStartupButton: UIButton!
-	
-	func setupIntroduction() {
-		introductionPanel.alpha = 0
-		view.addSubview(introductionPanel)
-		introductionPanel.center = self.view.center
-		introductionPanel.center.y += 100
+	var introductionPanel: UIView!
+	var introductionScrollView: UIScrollView!
+	var introductionPageControl: UIPageControl!
+	var showIntroductionOnStartupButton: UIButton!
+	var introductionPanelCenterYConstraint: NSLayoutConstraint?
+	var lastIntroductionPageWidth: CGFloat = 0
+	let introductionPanelHiddenCenterYOffset: CGFloat = 100
+
+	func prepareIntroductionPanelForLayout() {
+		if introductionPanel.superview == nil {
+			view.addSubview(introductionPanel)
+		}
+		installIntroductionPanelConstraintsIfNeeded()
 	}
-	
+
+	func setupIntroduction() {
+		prepareIntroductionPanelForLayout()
+		introductionPanel.alpha = 0
+		introductionPanelCenterYConstraint?.constant = introductionPanelHiddenCenterYOffset
+	}
+
 	func presentIntroduction() {
-		
+
 		activeOverlay = .intro
-		
-		if introductionPanel.superview == nil { setupIntroduction() }
-		
+
+		prepareIntroductionPanelForLayout()
+
+		lastIntroductionPageWidth = 0
 		introductionScrollView.contentOffset.x = 0
+		introductionPanelCenterYConstraint?.constant = introductionPanelHiddenCenterYOffset
+		view.layoutIfNeeded()
+		updateIntroductionScrollLayout()
+		introductionPageControl.goTo(0)
 		UIView.animate(withDuration: 0.3, animations: {
 			self.introductionPanel.alpha = 1
-			self.introductionPanel.center = self.view.center
-			self.menuButtonBars.alpha = 0
+			self.introductionPanelCenterYConstraint?.constant = 0
+			self.visibleMenuButton.alpha = 0
+			self.view.layoutIfNeeded()
 		})
-		
-		debugPrint("introductionScrollView contentSize: \(introductionScrollView.contentSize)")
 	}
-	
+
 	func dismissIntroduction() {
+		guard introductionPanel.superview != nil, introductionPanelCenterYConstraint != nil else {
+			introductionPanel.alpha = 0
+			visibleMenuButton.alpha = 1
+			return
+		}
 
 		UIView.animate(withDuration: 0.3, animations: {
 			self.introductionPanel.alpha = 0
-//			self.introductionPanel.center = self.view.center
-			self.introductionPanel.center.y += 100
-			self.menuButtonBars.alpha = 1
+			self.introductionPanelCenterYConstraint?.constant = self.introductionPanelHiddenCenterYOffset
+			self.visibleMenuButton.alpha = 1
+			self.view.layoutIfNeeded()
 		})
 	}
 	
@@ -1497,7 +1357,7 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 		debugPrint("introductionBackground: \(overlayBackground.frame)")
 	}
 
-	@IBAction func showIntroductionOnStartupButtonPressed(_ sender: Any) {
+	@objc func showIntroductionOnStartupButtonPressed(_ sender: Any) {
 		UserDefaults.standard.set(!UserDefaults.standard.bool(for: .showIntroductionOnStartup), for: .showIntroductionOnStartup)
 		setShowIntroductionOnStartupButton()
 	}
@@ -1509,8 +1369,17 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 	}
 	
 	// MARK: - Credits
-	@IBOutlet var creditsPanel: UIView!
-	@IBOutlet weak var creditsTextView: UITextView!
+	var creditsPanel: UIView!
+	var creditsTextView: UITextView!
+	var creditsPanelCenterYConstraint: NSLayoutConstraint?
+	let creditsPanelHiddenCenterYOffset: CGFloat = 100
+
+	func prepareCreditsPanelForLayout() {
+		if creditsPanel.superview == nil {
+			view.addSubview(creditsPanel)
+		}
+		installCreditsPanelConstraintsIfNeeded()
+	}
 	
 	func styled(_ string: String, _ fontStyle: UIFont.FontStyle, _ size: CGFloat) -> NSAttributedString {
 		
@@ -1548,43 +1417,50 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 //        textSuperview.layer.mask = gradientMask
 		
 		
+		prepareCreditsPanelForLayout()
 		creditsPanel.alpha = 0
-		view.addSubview(creditsPanel)
-		creditsPanel.center = self.view.center
-		creditsPanel.center.y += 100
-		
-		
+		creditsPanelCenterYConstraint?.constant = creditsPanelHiddenCenterYOffset
 	}
 
 	func presentCredits() {
-		
+
 		activeOverlay = .credits
-		
+
 		if creditsPanel.superview == nil { setupCredits() }
-		
+		prepareCreditsPanelForLayout()
+
 		creditsTextView.contentOffset.y = 0
+		creditsPanelCenterYConstraint?.constant = creditsPanelHiddenCenterYOffset
+		view.layoutIfNeeded()
 		UIView.animate(withDuration: 0.3, animations: {
 			self.creditsPanel.alpha = 1
-			self.creditsPanel.center = self.view.center
-			self.menuButtonBars.alpha = 0
+			self.creditsPanelCenterYConstraint?.constant = 0
+			self.visibleMenuButton.alpha = 0
+			self.view.layoutIfNeeded()
 		})
 	}
-	
+
 	func dismissCredits() {
-		
+		guard creditsPanel.superview != nil, creditsPanelCenterYConstraint != nil else {
+			creditsPanel.alpha = 0
+			visibleMenuButton.alpha = 1
+			return
+		}
+
 		UIView.animate(withDuration: 0.3, animations: {
 			self.creditsPanel.alpha = 0
-			self.creditsPanel.center.y += 100
-			self.menuButtonBars.alpha = 1
+			self.creditsPanelCenterYConstraint?.constant = self.creditsPanelHiddenCenterYOffset
+			self.visibleMenuButton.alpha = 1
+			self.view.layoutIfNeeded()
 		})
 	}
 
 
 	// MARK: - Settings
 	
-//	@IBOutlet weak var settingsButton: UIButton!
+//		var settingsButton: UIButton!
 	
-	@IBAction func showSettings(_ button: UIButton) {
+	@objc func showSettings(_ button: UIButton) {
 		let storyboard = UIStoryboard(name: "Main", bundle: nil)
 		guard let settingsViewController = storyboard.instantiateViewController(withIdentifier: "settingsViewController") as? SettingsViewController else {
 			return

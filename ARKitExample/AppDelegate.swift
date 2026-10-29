@@ -24,4 +24,21 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 	) {
 	}
 
+//	func application(
+//		_ application: UIApplication,
+//		supportedInterfaceOrientationsFor window: UIWindow?
+//	) -> UIInterfaceOrientationMask {
+//		guard let window else {
+//			return .portrait
+//		}
+//
+//		let size = window.screen.bounds.size
+//		let shorterDimension = min(size.width, size.height)
+//
+//		if shorterDimension < 500 {
+//			return .portrait
+//		} else {
+//			return .all
+//		}
+//	}
 }

@@ -66,10 +66,10 @@
             timestampString = "565637669.706706"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "636"
-            endingLineNumber = "636"
-            landmarkName = "isLoadingObject"
-            landmarkType = "24">
+            startingLineNumber = "606"
+            endingLineNumber = "606"
+            landmarkName = "checkIfObjectShouldMoveOntoPlane(anchor:)"
+            landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
@@ -83,10 +83,10 @@
             timestampString = "565637669.70679"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "645"
-            endingLineNumber = "645"
-            landmarkName = "ViewController"
-            landmarkType = "3">
+            startingLineNumber = "615"
+            endingLineNumber = "615"
+            landmarkName = "checkIfObjectShouldMoveOntoPlane(anchor:)"
+            landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
@@ -100,10 +100,10 @@
             timestampString = "565637669.706836"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "647"
-            endingLineNumber = "647"
-            landmarkName = "ViewController"
-            landmarkType = "3">
+            startingLineNumber = "617"
+            endingLineNumber = "617"
+            landmarkName = "checkIfObjectShouldMoveOntoPlane(anchor:)"
+            landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
@@ -117,26 +117,9 @@
             timestampString = "565637669.7068779"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "653"
-            endingLineNumber = "653"
-            landmarkName = "loadVirtualObject(at:placeObject:)"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            uuid = "0C950146-025D-4B24-8F79-68D4F23F4B0C"
-            shouldBeEnabled = "Yes"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "ARKitExample/ViewController.swift"
-            timestampString = "565637669.706918"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "691"
-            endingLineNumber = "691"
-            landmarkName = "loadVirtualObject(at:placeObject:)"
+            startingLineNumber = "623"
+            endingLineNumber = "623"
+            landmarkName = "checkIfObjectShouldMoveOntoPlane(anchor:)"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
@@ -151,25 +134,8 @@
             timestampString = "565637669.706956"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "689"
-            endingLineNumber = "689"
-            landmarkName = "loadVirtualObject(at:placeObject:)"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            uuid = "FAA8A620-23AB-4C96-8D81-7B5BEC9A2784"
-            shouldBeEnabled = "Yes"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "ARKitExample/ViewController.swift"
-            timestampString = "565637669.7069941"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "662"
-            endingLineNumber = "662"
+            startingLineNumber = "648"
+            endingLineNumber = "648"
             landmarkName = "loadVirtualObject(at:placeObject:)"
             landmarkType = "7">
          </BreakpointContent>
