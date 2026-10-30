@@ -8,6 +8,14 @@ Manages gesture interactions with the AR scene.
 import Foundation
 import ARKit
 
+/// Screen-space Y drag → `eulerAngles.y` (tune on device).
+private enum GlobeYDragParams {
+	static let referenceCameraDistance: Float = 0.7
+	static let baseRadiansPerPoint: Float = 0.0075
+	static let distanceScaleMin: Float = 0.5
+	static let distanceScaleMax: Float = 4.0
+}
+
 class Gesture {
 	
 	enum TouchEventType {
@@ -104,17 +112,17 @@ class SingleFingerGesture: Gesture {
 	
 	var initialTouchLocation = CGPoint()
 	var latestTouchLocation = CGPoint()
-	
-	var initialLocationOnObject = SCNVector3()
-	let rotationThreshold: Float = Float.pi / 60 // (3°)
-	var rotationThresholdPassed = false
-	var initialObjectAngle: Float = 0
+	private var lastProcessedTouchLocation = CGPoint(x: -1, y: -1)
 
 	let translationThreshold: CGFloat = 30
 	var translationThresholdPassed = false
 	var hasMovedObject = false
 	var firstTouchWasOnObject = false
 	var dragOffset = CGPoint()
+	
+	private var yDragRotationActive = false
+	private var yDragStartX: CGFloat = 0
+	private var initialYaw: Float = 0
 	
 	override init(_ touches: Set<UITouch>, _ sceneView: ARSCNView, _ virtualObject: VirtualObject) {
 		super.init(touches, sceneView, virtualObject)
@@ -124,28 +132,24 @@ class SingleFingerGesture: Gesture {
 		
 		latestTouchLocation = initialTouchLocation
 		
-		// Check if the initial touch was on the object or not.
-		
 		var hitTestOptions = [SCNHitTestOption: Any]()
 		hitTestOptions[SCNHitTestOption.boundingBoxOnly] = true
 		let results: [SCNHitTestResult] = sceneView.hitTest(initialTouchLocation, options: hitTestOptions)
-		for result in results {
-			if VirtualObject.isNodePartOfVirtualObject(result.node) {
-				firstTouchWasOnObject = true
-
-				initialLocationOnObject = result.worldCoordinates
-
-				break
-			}
+		for result in results where VirtualObject.isNodePartOfVirtualObject(result.node) {
+			firstTouchWasOnObject = true
+			break
 		}
-		
-		initialObjectAngle = virtualObject.eulerAngles.y
 	}
 	
 	func updateGesture() {
 		
 		let touch = currentTouches[currentTouches.index(currentTouches.startIndex, offsetBy: 0)]
 		latestTouchLocation = touch.location(in: sceneView)
+		
+		if latestTouchLocation == lastProcessedTouchLocation {
+			return
+		}
+		lastProcessedTouchLocation = latestTouchLocation
 		
 		if !translationThresholdPassed {
 			let initialLocationToCurrentLocation = latestTouchLocation - initialTouchLocation
@@ -155,65 +159,42 @@ class SingleFingerGesture: Gesture {
 				
 				let currentObjectLocation = CGPoint(sceneView.projectPoint(virtualObject.position))
 				dragOffset = latestTouchLocation - currentObjectLocation
+				
+				if firstTouchWasOnObject {
+					beginYAxisDragRotation()
+				}
 			}
 		}
 		
-		// A single finger drag will occur if the drag started on the object and the threshold has been passed.
-		if translationThresholdPassed && firstTouchWasOnObject {
-			
-//			let offsetPos = latestTouchLocation - dragOffset
-//			virtualObject.translateBasedOnScreenPos(offsetPos, instantly:false, infinitePlane:true)
-//			hasMovedObject = true
-
-			var hitTestOptions = [SCNHitTestOption: Any]()
-			hitTestOptions[SCNHitTestOption.boundingBoxOnly] = true
-			let results: [SCNHitTestResult] = sceneView.hitTest(latestTouchLocation, options: hitTestOptions)
-			for result in results {
-				if VirtualObject.isNodePartOfVirtualObject(result.node) {
-					
-					updateRotation(currentLocationOnObject: result.worldCoordinates)
-
-					hasMovedObject = true
-					
-					break
-				}
-			}
+		if translationThresholdPassed && yDragRotationActive {
+			updateYAxisDragRotation()
 		}
 	}
 	
-	func updateRotation(currentLocationOnObject: SCNVector3) {
-		
-		let initialVector = initialLocationOnObject - virtualObject.position
-		let currentVector = currentLocationOnObject - virtualObject.position
-		
-		let currentAngle = atan2(initialVector.x, initialVector.z) - atan2(currentVector.x, currentVector.z)
-		
-		debugPrint("currentAngle: \(currentAngle)")
-		
-		
-		if !rotationThresholdPassed {
-			if abs(currentAngle) > rotationThreshold {
-				
-				rotationThresholdPassed = true
-				
-				// Change the initial object angle to prevent a sudden jump after crossing the threshold.
-				if currentAngle > 0 {
-					initialObjectAngle += rotationThreshold
-				} else {
-					initialObjectAngle -= rotationThreshold
-				}
-			}
-		}
-		
-		let rotationBooster: Float = 1//.1
-		
-		if rotationThresholdPassed {
-			// Note:
-			// For looking down on the object (99% of all use cases), we need to subtract the angle.
-			// To make rotation also work correctly when looking from below the object one would have to
-			// flip the sign of the angle depending on whether the object is above or below the camera...
-			virtualObject.eulerAngles.y = initialObjectAngle - currentAngle * rotationBooster
-		}
+	private func beginYAxisDragRotation() {
+		yDragRotationActive = true
+		yDragStartX = latestTouchLocation.x
+		initialYaw = virtualObject.eulerAngles.y
+	}
+	
+	private func cameraDistanceToGlobe() -> Float {
+		guard let frame = sceneView.session.currentFrame else { return GlobeYDragParams.referenceCameraDistance }
+		let cameraPos = SCNVector3.positionFromTransform(frame.camera.transform)
+		return (cameraPos - virtualObject.position).length()
+	}
+	
+	private func updateYAxisDragRotation() {
+		let deltaX = latestTouchLocation.x - yDragStartX
+		let distance = cameraDistanceToGlobe()
+		let scale = distance / GlobeYDragParams.referenceCameraDistance
+		let clampedScale = min(
+			max(scale, GlobeYDragParams.distanceScaleMin),
+			GlobeYDragParams.distanceScaleMax
+		)
+		let angle = Float(deltaX) * GlobeYDragParams.baseRadiansPerPoint * clampedScale
+		// For looking down on the object (typical AR use), subtract the angle.
+		virtualObject.eulerAngles.y = initialYaw + angle
+		hasMovedObject = true
 	}
 	
 	func finishGesture() {

@@ -110,13 +110,11 @@ class VirtualObject: SCNNode {
 extension VirtualObject {
 	
 	static func isNodePartOfVirtualObject(_ node: SCNNode) -> Bool {
-		debugPrint("\(#function) – \(node.name ?? "---")")
 		if node.name == "Virtual object root node" {
 			return true
 		}
 		
 		if node.parent != nil {
-			debugPrint("\(#function) – \(node.name ?? "---")")
 			return isNodePartOfVirtualObject(node.parent!)
 		}
 		
