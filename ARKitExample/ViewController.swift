@@ -90,6 +90,7 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 	override func viewSafeAreaInsetsDidChange() {
 		super.viewSafeAreaInsetsDidChange()
 		view.setNeedsUpdateConstraints()
+		updateGlobeTimeSliderLayout(preserveYear: true)
 	}
 
 	override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
@@ -355,10 +356,29 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 	
 	var currentGesture: Gesture?
 	
+	private func touchIsInTimeSliderRegion(_ touch: UITouch) -> Bool {
+		guard timeSliderTouchRegion != nil else { return false }
+		let point = touch.location(in: view)
+		return timeSliderTouchRegion.frame.contains(point)
+	}
+	
+	private func shouldDeferToTimeSlider(_ touches: Set<UITouch>) -> Bool {
+		guard let region = timeSliderTouchRegion,
+		      region.isUserInteractionEnabled,
+		      region.alpha > 0.01 else {
+			return false
+		}
+		return touches.contains(where: touchIsInTimeSliderRegion)
+	}
+	
 	override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
 //		guard let object = virtualObject else {
 //			return
 //		}
+		
+		if shouldDeferToTimeSlider(touches) {
+			return
+		}
 		
 		if currentGesture == nil {
 			currentGesture = Gesture.startGestureFromTouches(touches, self.sceneView, globe)
@@ -370,6 +390,9 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 	}
 	
 	override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+		if shouldDeferToTimeSlider(touches) {
+			return
+		}
 		if virtualObject == nil {
 			return
 		}
@@ -378,6 +401,9 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 	}
 	
 	override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+		if shouldDeferToTimeSlider(touches) {
+			return
+		}
 		if globeState == .loaded {
 			placeGlobe()
 		}
@@ -386,6 +412,9 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 	}
 	
 	override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
+		if shouldDeferToTimeSlider(touches) {
+			return
+		}
 		currentGesture = currentGesture?.updateGestureFromTouches(touches, .touchCancelled)
 	}
 	
@@ -684,6 +713,7 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 	// MARK: - Globe
 	
 	var globeControlPanel: UIView!
+	var timeSliderTouchRegion: UIView!
 	var timeScrollView: UIScrollView!
 	var focusTimeScrollView: UIScrollView!
 	var timeScrollWrapper: UIView!
@@ -747,9 +777,12 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
         
 		UIView.animate(withDuration: 0.5, animations: {
 			self.globeControlPanel.alpha = 1
+			self.timeSliderTouchRegion.alpha = 1
 //            self.thermometerContainer.alpha = 1
 		}) { (_) in
 			self.globeControlPanel.isUserInteractionEnabled = true
+			self.timeScrollView.isUserInteractionEnabled = true
+			self.timeSliderTouchRegion.isUserInteractionEnabled = true
 		}
 	}
 	
@@ -767,8 +800,11 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 		updateGlobeTimeSliderLayout(preserveYear: false)
 		
 		globeControlPanel.isUserInteractionEnabled = false
+		timeScrollView.isUserInteractionEnabled = false
+		timeSliderTouchRegion.isUserInteractionEnabled = false
 		UIView.animate(withDuration: 0.5, animations: {
 			self.globeControlPanel.alpha = 0
+			self.timeSliderTouchRegion.alpha = 0
 //            self.thermometerContainer.alpha = 0
 //			self.thermometerCO2CounterPanel.alpha = 0
 //			self.thermometerCO2CounterLabel.alpha = 0
@@ -789,16 +825,7 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 		switch scrollView {
 		
 		case timeScrollView:
-			focusTimeScrollView.contentOffset = timeScrollView.contentOffset
-			
-			let yearPosition = Double(350 * timeScrollView.contentOffset.x / 2_800)
-			currentYear = min(max(0, Int(yearPosition.rounded())), 349)
-			
-			setThermometer()
-			setPanelVisibilities()
-			if globe.canUpdateYearWhileScrolling && (scrollView.isTracking || scrollView.isDecelerating) {
-				globe.scrubYear(to: yearPosition)
-			}
+			applyMainTimeScrollOffsetSideEffects(fromUserScroll: scrollView.isTracking || scrollView.isDecelerating)
 
 		case introductionScrollView:
 			introductionPageControl.goTo(Int(round(Float(scrollView.contentOffset.x / scrollView.frame.size.width))))

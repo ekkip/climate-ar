@@ -13,12 +13,52 @@ private enum GlobeTimeSliderMetrics {
 	static let yearLabelY: CGFloat = 4
 	static let yearLabelHeight: CGFloat = 28
 	static let centerOffset: CGFloat = 40
-	static let scrollContentRange: CGFloat = 2_800
 	static let yearIndexMax = 349
 	static let yearLabelTagBase = 1_000
+
+	static func contentWidth(forViewportWidth viewportWidth: CGFloat) -> CGFloat {
+		let padding = viewportWidth / 2 - centerOffset
+		return padding + CGFloat(yearLabelCount) * yearLabelWidth + padding
+	}
+
+	static func maxContentOffsetX(forViewportWidth viewportWidth: CGFloat) -> CGFloat {
+		let contentWidth = contentWidth(forViewportWidth: viewportWidth)
+		return max(0, contentWidth - viewportWidth)
+	}
+
+	static func pixelAligned(_ value: CGFloat, scale: CGFloat) -> CGFloat {
+		guard scale > 0 else { return value }
+		return (value * scale).rounded() / scale
+	}
 }
 
 extension ViewController {
+
+	func configureGlobeTimeScrollView(_ scrollView: UIScrollView) {
+		scrollView.contentInset = .zero
+		scrollView.scrollIndicatorInsets = .zero
+		scrollView.contentInsetAdjustmentBehavior = .never
+		if #available(iOS 13.0, *) {
+			scrollView.automaticallyAdjustsScrollIndicatorInsets = false
+		}
+	}
+
+	func applyMainTimeScrollOffsetSideEffects(fromUserScroll: Bool) {
+		focusTimeScrollView.contentOffset = timeScrollView.contentOffset
+
+		let scrollRange = mainTimeScrollContentOffsetRange()
+		let normalizedOffsetX = mainTimeScrollNormalizedContentOffsetX()
+		let yearPosition = scrollRange > 0
+			? Double(350 * normalizedOffsetX / scrollRange)
+			: 0
+		currentYear = min(max(0, Int(yearPosition.rounded())), 349)
+
+		setThermometer()
+		setPanelVisibilities()
+		if fromUserScroll, globe.canUpdateYearWhileScrolling {
+			globe.scrubYear(to: yearPosition)
+		}
+	}
 
 	func installGlobeTimeSliderContentIfNeeded() {
 		guard !globeTimeSliderContentInstalled else { return }
@@ -49,14 +89,20 @@ extension ViewController {
 		guard globeTimeSliderContentInstalled else { return }
 		guard timeScrollView.bounds.width > 0 else { return }
 
+		configureGlobeTimeScrollView(timeScrollView)
+		configureGlobeTimeScrollView(focusTimeScrollView)
+
 		let yearToPreserve = preserveYear ? currentYear : 0
 		let width = timeScrollView.bounds.width
 		let widthChanged = abs(width - lastGlobeTimeSliderLayoutWidth) > 0.5
 
 		if widthChanged {
 			lastGlobeTimeSliderLayoutWidth = width
-			let padding = width / 2 - GlobeTimeSliderMetrics.centerOffset
-			var contentRect = CGRect.zero
+			let scale = timeScrollView.traitCollection.displayScale
+			let padding = GlobeTimeSliderMetrics.pixelAligned(
+				width / 2 - GlobeTimeSliderMetrics.centerOffset,
+				scale: scale
+			)
 
 			for index in 0..<GlobeTimeSliderMetrics.yearLabelCount {
 				let frame = CGRect(
@@ -65,7 +111,6 @@ extension ViewController {
 					width: GlobeTimeSliderMetrics.yearLabelWidth,
 					height: GlobeTimeSliderMetrics.yearLabelHeight
 				)
-				contentRect = contentRect.union(frame)
 
 				if let mainLabel = timeScrollView.viewWithTag(GlobeTimeSliderMetrics.yearLabelTagBase + index) {
 					mainLabel.frame = frame
@@ -75,9 +120,13 @@ extension ViewController {
 				}
 			}
 
-			contentRect.size.width += padding
-			timeScrollView.contentSize = contentRect.size
-			focusTimeScrollView.contentSize = contentRect.size
+			let contentWidth = GlobeTimeSliderMetrics.pixelAligned(
+				padding + CGFloat(GlobeTimeSliderMetrics.yearLabelCount) * GlobeTimeSliderMetrics.yearLabelWidth + padding,
+				scale: scale
+			)
+			let contentSize = CGSize(width: contentWidth, height: GlobeTimeSliderMetrics.yearLabelHeight + GlobeTimeSliderMetrics.yearLabelY)
+			timeScrollView.contentSize = contentSize
+			focusTimeScrollView.contentSize = contentSize
 		}
 
 		updateGlobeTimeSliderMaskLayers()
@@ -158,8 +207,24 @@ extension ViewController {
 		return [0, focusRectStart, focusRectStart, focusRectEnd, focusRectEnd, 1]
 	}
 
+	func mainTimeScrollNormalizedContentOffsetX() -> CGFloat {
+		timeScrollView.contentOffset.x + timeScrollView.contentInset.left
+	}
+
+	func mainTimeScrollContentOffsetRange() -> CGFloat {
+		let inset = timeScrollView.contentInset
+		let viewportWidth = timeScrollView.bounds.width
+		let contentWidth = timeScrollView.contentSize.width
+		guard viewportWidth > 0, contentWidth > 0 else {
+			return GlobeTimeSliderMetrics.maxContentOffsetX(forViewportWidth: viewportWidth)
+		}
+		return max(0, contentWidth - viewportWidth + inset.left + inset.right)
+	}
+
 	func contentOffsetX(forYearIndex yearIndex: Int) -> CGFloat {
 		let clamped = min(max(0, yearIndex), GlobeTimeSliderMetrics.yearIndexMax)
-		return CGFloat(clamped) / CGFloat(GlobeTimeSliderMetrics.yearIndexMax) * GlobeTimeSliderMetrics.scrollContentRange
+		let range = mainTimeScrollContentOffsetRange()
+		let normalized = CGFloat(clamped) / CGFloat(GlobeTimeSliderMetrics.yearIndexMax) * range
+		return normalized - timeScrollView.contentInset.left
 	}
 }

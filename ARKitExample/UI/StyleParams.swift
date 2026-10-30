@@ -22,11 +22,18 @@ enum StyleParams {
 
 	static let globeControlPanelHeight: CGFloat = 76
 	static let globeControlHorizontalInset: CGFloat = 54
-	static let globeControlPanelTopMargin: CGFloat = 20
+	static let globeControlPanelVerticalMargin: CGFloat = 20
 	static let screenshotButtonSize: CGFloat = 48
 	static let autoplayButtonSize: CGFloat = 48
 	static let timeSliderHeight: CGFloat = 36
 	static let timeSliderFocusWidth: CGFloat = 77
+	/// Panel bottom inset from the root view bottom (fixed pt; not `safeAreaLayoutGuide`).
+	/// Matches legacy storyboard spacing and leaves room for the 20 pt touch margin below the visible slider.
+	static var timeSliderPanelBottomInsetFromView: CGFloat { safeAreaMarginBottom }
+	/// Full-width drag strip: margin + slider + margin (20 + 36 + 20 = 76 pt).
+	static var timeSliderTouchRegionHeight: CGFloat {
+		timeSliderHeight + 2 * globeControlPanelVerticalMargin
+	}
 
 	static let thermometerWidth: CGFloat = 12
 	static let thermometerHeight: CGFloat = 552

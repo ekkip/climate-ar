@@ -83,15 +83,36 @@ extension ViewController {
 	private func buildGlobeControlPanel() {
 		globeControlPanel = populateGlobeControlPanel()
 		globeControlPanel.alpha = 0
+		globeControlPanel.isUserInteractionEnabled = false
 		globeControlPanel.backgroundColor = .clear
 		globeControlPanel.translatesAutoresizingMaskIntoConstraints = false
 		view.addSubview(globeControlPanel)
 
+		let touchRegion = TimeSliderTouchRegionView()
+		touchRegion.backgroundColor = .clear
+		touchRegion.alpha = 0
+		touchRegion.isUserInteractionEnabled = false
+		touchRegion.translatesAutoresizingMaskIntoConstraints = false
+		touchRegion.scrollView = timeScrollView
+		touchRegion.onScrollOffsetChanged = { [weak self] in
+			self?.applyMainTimeScrollOffsetSideEffects(fromUserScroll: true)
+		}
+		timeSliderTouchRegion = touchRegion
+
+		view.insertSubview(timeSliderTouchRegion, belowSubview: globeControlPanel)
+
 		NSLayoutConstraint.activate([
 			globeControlPanel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: StyleParams.globeControlHorizontalInset),
 			globeControlPanel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -StyleParams.globeControlHorizontalInset),
-			globeControlPanel.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -StyleParams.safeAreaMarginBottom),
+			globeControlPanel.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -StyleParams.timeSliderPanelBottomInsetFromView),
 			globeControlPanel.heightAnchor.constraint(equalToConstant: StyleParams.timeSliderHeight),
+
+			timeSliderTouchRegion.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+			timeSliderTouchRegion.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+			timeSliderTouchRegion.topAnchor.constraint(equalTo: globeControlPanel.topAnchor,
+			                                           constant: -StyleParams.globeControlPanelVerticalMargin),
+			timeSliderTouchRegion.bottomAnchor.constraint(equalTo: globeControlPanel.bottomAnchor,
+			                                              constant: StyleParams.globeControlPanelVerticalMargin),
 		])
 	}
 
@@ -137,7 +158,9 @@ extension ViewController {
 		timeScrollView.backgroundColor = .clear
 		timeScrollView.delegate = self
 		timeScrollView.translatesAutoresizingMaskIntoConstraints = false
+		configureGlobeTimeScrollView(timeScrollView)
 		scrollWrapper.addSubview(timeScrollView)
+		timeScrollView.pinEdges(to: scrollWrapper)
 
 		focusTimeScrollView = UIScrollView()
 		focusTimeScrollView.showsHorizontalScrollIndicator = false
@@ -145,6 +168,7 @@ extension ViewController {
 		focusTimeScrollView.backgroundColor = .clear
 		focusTimeScrollView.delegate = self
 		focusTimeScrollView.translatesAutoresizingMaskIntoConstraints = false
+		configureGlobeTimeScrollView(focusTimeScrollView)
 		focusWrapper.addSubview(focusTimeScrollView)
 
 		NSLayoutConstraint.activate([
@@ -165,7 +189,6 @@ extension ViewController {
 		])
 		scrollWrapper.pinEdges(to: container)
 		focusWrapper.pinEdges(to: container)
-		timeScrollView.pinEdges(to: scrollWrapper)
 		focusTimeScrollView.pinEdges(to: focusWrapper)
 
 		return container
@@ -186,7 +209,7 @@ extension ViewController {
 			thermometerPanel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: StyleParams.thermometerLeadingFromSafeArea),
 			thermometerPanel.widthAnchor.constraint(equalToConstant: StyleParams.thermometerWidth),
 			thermometerPanel.heightAnchor.constraint(equalToConstant: StyleParams.thermometerHeight),
-			thermometerPanel.bottomAnchor.constraint(equalTo: globeControlPanel.topAnchor, constant: -StyleParams.globeControlPanelTopMargin),
+			thermometerPanel.bottomAnchor.constraint(equalTo: globeControlPanel.topAnchor, constant: -StyleParams.globeControlPanelVerticalMargin),
 		])
 
 		thermometerContainer = UIView()
@@ -415,7 +438,7 @@ extension ViewController {
 
 		NSLayoutConstraint.activate([
 			climatePolicySimulationPanel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -StyleParams.safeAreaMarginTrailing),
-			climatePolicySimulationPanel.bottomAnchor.constraint(equalTo: globeControlPanel.topAnchor, constant: -StyleParams.globeControlPanelTopMargin),
+			climatePolicySimulationPanel.bottomAnchor.constraint(equalTo: globeControlPanel.topAnchor, constant: -StyleParams.globeControlPanelVerticalMargin),
 
 			label.leadingAnchor.constraint(equalTo: climatePolicySimulationPanel.leadingAnchor),
 			label.centerYAnchor.constraint(equalTo: climatePolicySimulationPanel.centerYAnchor),

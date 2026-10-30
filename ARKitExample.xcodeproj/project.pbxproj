@@ -49,6 +49,7 @@
 		E1A100102E89EC2C00E00B6E /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = E1A100112E89EC2C00E00B6F /* Main.storyboard */; };
 		E1A100122E89EC2C00E00B70 /* MenuChromeLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A100132E89EC2C00E00B71 /* MenuChromeLayout.swift */; };
 		E1A100152E89EC2C00E00B73 /* ViewController+GlobeTimeSlider.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A100142E89EC2C00E00B72 /* ViewController+GlobeTimeSlider.swift */; };
+		E1A100172E89EC2C00E00B75 /* TimeSliderTouchRegionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A100162E89EC2C00E00B74 /* TimeSliderTouchRegionView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -100,6 +101,7 @@
 		E1A100112E89EC2C00E00B6F /* Main.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Main.storyboard; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		E1A100132E89EC2C00E00B71 /* MenuChromeLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuChromeLayout.swift; sourceTree = "<group>"; };
 		E1A100142E89EC2C00E00B72 /* ViewController+GlobeTimeSlider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ViewController+GlobeTimeSlider.swift"; sourceTree = "<group>"; };
+		E1A100162E89EC2C00E00B74 /* TimeSliderTouchRegionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeSliderTouchRegionView.swift; sourceTree = "<group>"; };
 		F7F3D70C60AEA7172E5341BB /* Pods_ARKitExample.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_ARKitExample.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -254,6 +256,7 @@
 				E1A1000F2E89EC2C00E00B6D /* ViewController+CreditsLayout.swift */,
 				E1A100132E89EC2C00E00B71 /* MenuChromeLayout.swift */,
 				E1A100142E89EC2C00E00B72 /* ViewController+GlobeTimeSlider.swift */,
+				E1A100162E89EC2C00E00B74 /* TimeSliderTouchRegionView.swift */,
 			);
 			path = UI;
 			sourceTree = "<group>";
@@ -424,6 +427,7 @@
 				E1A1000E2E89EC2C00E00B6C /* ViewController+CreditsLayout.swift in Sources */,
 				E1A100122E89EC2C00E00B70 /* MenuChromeLayout.swift in Sources */,
 				E1A100152E89EC2C00E00B73 /* ViewController+GlobeTimeSlider.swift in Sources */,
+				E1A100172E89EC2C00E00B75 /* TimeSliderTouchRegionView.swift in Sources */,
 				C4FBC02B1EC6438B003F7864 /* ARCameraTrackingState.swift in Sources */,
 				699946801F6D950000B5C7BD /* Globe.swift in Sources */,
 				699946821F6D950000B5C7BD /* MergedPrismLayer.swift in Sources */,
