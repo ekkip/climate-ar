@@ -110,6 +110,30 @@ class Prism: SCNNode {
 		setTooltip(value: value, y: baseRadius * 1.03 + value * heightFactor * 1.005)
 	}
 	
+	/// Value at a fractional year index, linear between years, blending base (0) and policy (1) series like the merged renderer's shader.
+	func value(at year: Double, policyWeight: Float) -> Float {
+		guard !years.isEmpty else { return 0 }
+		let clamped = min(max(year, 0), Double(years.count - 1))
+		let y0 = Int(clamped)
+		let y1 = min(y0 + 1, years.count - 1)
+		func blended(_ y: Int) -> Float {
+			let base = years[y]
+			return base + (yearValue(y, climatePolicy: true) - base) * policyWeight
+		}
+		return blended(y0) + (blended(y1) - blended(y0)) * Float(clamped - Double(y0))
+	}
+	
+	/// May run on the SceneKit render thread; only touches node properties.
+	func placeTooltip(value: Float) {
+		isHidden = value <= threshold
+		tooltip?.position.y = baseRadius * 1.03 + value * heightFactor * 1.005
+	}
+	
+	func setTooltipLabel(year: Int, policy: Bool) {
+		guard years.count > year else { return }
+		tooltip?.set(yearValue(year, climatePolicy: policy))
+	}
+	
 	/// Detached prisms that stay below threshold for both scenarios need no SceneKit work on policy toggle.
 	func shouldSkipPolicyToggle(year: Int, previousClimatePolicy: Bool) -> Bool {
 		guard years.count > year else { return true }

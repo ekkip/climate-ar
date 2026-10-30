@@ -93,7 +93,10 @@ class Tooltip: SCNNode {
 	}
 	
 	func set(_ value: Float) {
-		valueLabel.text = formatted(value * Const.cco2MassFactor)
+		let text = formatted(value * Const.cco2MassFactor)
+		if valueLabel.text != text {
+			valueLabel.text = text
+		}
 	}
 
 	func align(for deviation: Float) {

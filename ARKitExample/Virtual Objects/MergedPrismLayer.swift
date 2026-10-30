@@ -3,10 +3,12 @@
 //  ARKitExample
 //
 //  Draws all globe prisms as one mesh (one draw call instead of one per prism).
-//  Vertex data is rebuilt on a background queue; the main thread only swaps in the finished geometry.
+//  Mesh and per-cell values for all years are uploaded once; a geometry shader modifier computes every prism's height
+//  from the displayed (fractional) year and policy blend, so year changes, scrubbing and animations need no rebuilds.
 //
 
 import Foundation
+import Metal
 import SceneKit
 import simd
 
@@ -53,6 +55,15 @@ final class MergedPrismLayer {
 			policyValues.append(contentsOf: years26)
 		}
 		
+		func yearCount(cell i: Int) -> Int {
+			return baseCounts[i]
+		}
+		
+		/// First year index of the cell's policy series; equal to `yearCount` when it has none.
+		func policyOffset(cell i: Int) -> Int {
+			return baseCounts[i] - policyCounts[i]
+		}
+		
 		/// Same selection rule as `Prism.yearValue`; nil when the year is outside the cell's series.
 		func value(cell i: Int, year: Int, policy: Bool) -> Float? {
 			let baseCount = baseCounts[i]
@@ -71,185 +82,273 @@ final class MergedPrismLayer {
 		let triangleIndices: [Int]
 	}
 	
+	/// Displayed year index (fractional while scrubbing or animating) and policy blend (0 = base, 1 = policy series).
+	struct State: Equatable {
+		var year: Double
+		var policy: Double
+	}
+	
+	static let animationDuration: CFTimeInterval = 0.5
+	/// Largest 2D texture size on every Metal GPU family; one texture row per cell.
+	private static let maxTextureSize = 16_384
+	/// Hidden prisms collapse onto their base, pulled this far inside the globe surface.
+	private static let hiddenRadiusFactor: Float = 0.98
+	private static let animationKey = "prismState"
+	
+	/// Each vertex stores its prism's position at value 0 (`position`), the change per unit value (`color.rgb`; prism shape is
+	/// linear in the value) and its cell (`texcoords[0].x`). `prismValues` holds one row per cell: the base series in columns
+	/// 0...lastYear, then the policy series from year `prismPolicyStart` on (earlier years repeat the base series).
+	private static let shaderModifier = """
+	#pragma arguments
+	texture2d<float> prismValues;
+	float prismYear;
+	float prismPolicy;
+	float prismLastYear;
+	float prismPolicyStart;
+	float prismThreshold;
+	float prismHiddenScale;
+	#pragma body
+	uint cell = uint(_geometry.texcoords[0].x + 0.5);
+	float year = clamp(prismYear, 0.0, prismLastYear);
+	uint y0 = uint(year);
+	uint y1 = min(y0 + 1, uint(prismLastYear));
+	float f = year - float(y0);
+	uint baseColumns = uint(prismLastYear) + 1;
+	uint policyStart = uint(prismPolicyStart);
+	uint p0 = y0 < policyStart ? y0 : baseColumns + y0 - policyStart;
+	uint p1 = y1 < policyStart ? y1 : baseColumns + y1 - policyStart;
+	float baseValue = mix(prismValues.read(uint2(y0, cell)).r, prismValues.read(uint2(y1, cell)).r, f);
+	float policyValue = mix(prismValues.read(uint2(p0, cell)).r, prismValues.read(uint2(p1, cell)).r, f);
+	float value = mix(baseValue, policyValue, prismPolicy);
+	if (value > prismThreshold) {
+		_geometry.position.xyz += value * _geometry.color.rgb;
+	} else {
+		_geometry.position.xyz *= prismHiddenScale;
+	}
+	_geometry.color = float4(1.0);
+	"""
+	
 	let node = SCNNode()
 	
-	/// Called on the main thread right after a new geometry has been swapped in.
-	var onApplied: ((_ year: Int, _ policy: Bool) -> Void)?
+	/// Called for every displayed state: on the main thread when set directly, on the SceneKit render thread while animating.
+	/// Only update SceneKit nodes in it.
+	var onStateChanged: ((State) -> Void)?
 	
-	private let cells: Cells
-	private let shape: Shape
-	private let template: Template
-	private let element: SCNGeometryElement
+	/// Last year index of the longest cell series; shorter series have value 0 (hidden) beyond their end.
+	let lastYear: Int
+	let cellCount: Int
+	
 	private let material: SCNMaterial
-	private let queue = DispatchQueue(label: "globe.mergedPrismLayer", qos: .userInitiated)
+	private let stateLock = NSLock()
+	private var renderedState = State(year: 0, policy: 0)
+	/// Replaced animations are ignored via the generation.
+	private var stateGeneration = 0
 	
-	private var isBuilding = false
-	private var pendingRequest: (year: Int, policy: Bool)?
-	private var pendingCompletions = [() -> Void]()
-	private var coalescedRequests = 0
-	
-	var cellCount: Int { return cells.count }
-	
+	/// Builds mesh and value texture synchronously (tens of ms in Release); call off the main thread.
 	init?(cells: Cells, shape: Shape, templateGeometry: SCNGeometry) {
-		guard let template = MergedPrismLayer.makeTemplate(from: templateGeometry),
-			let material = templateGeometry.firstMaterial else {
+		guard cells.count > 0, cells.count <= MergedPrismLayer.maxTextureSize,
+			let template = MergedPrismLayer.makeTemplate(from: templateGeometry),
+			let templateMaterial = templateGeometry.firstMaterial,
+			let material = templateMaterial.copy() as? SCNMaterial,
+			let device = MTLCreateSystemDefaultDevice() else {
 			return nil
 		}
-		self.cells = cells
-		self.shape = shape
-		self.template = template
+		#if DEBUG
+		let signpost = GlobePerf.beginMergedBuild(year: 0, policy: false)
+		let buildStart = Date()
+		#endif
+		
+		let lastYear = max(0, ((0..<cells.count).map { cells.yearCount(cell: $0) }.max() ?? 1) - 1)
+		let policyStart = (0..<cells.count).map { cells.policyOffset(cell: $0) }.min().map { min($0, lastYear + 1) } ?? lastYear + 1
+		guard let values = MergedPrismLayer.makeValueTexture(cells: cells, lastYear: lastYear, policyStart: policyStart, device: device) else {
+			return nil
+		}
+		let geometry = MergedPrismLayer.makeGeometry(cells: cells, shape: shape, template: template, maxValues: values.maxValues)
+		
+		material.shaderModifiers = [.geometry: MergedPrismLayer.shaderModifier]
+		material.setValue(SCNMaterialProperty(contents: values.texture), forKey: "prismValues")
+		material.setValue(Double(lastYear), forKey: "prismLastYear")
+		material.setValue(Double(policyStart), forKey: "prismPolicyStart")
+		material.setValue(Double(shape.threshold), forKey: "prismThreshold")
+		material.setValue(Double(MergedPrismLayer.hiddenRadiusFactor), forKey: "prismHiddenScale")
+		material.setValue(0.0, forKey: "prismYear")
+		material.setValue(0.0, forKey: "prismPolicy")
+		geometry.materials = [material]
+		
 		self.material = material
-		self.element = MergedPrismLayer.makeElement(cellCount: cells.count, template: template)
+		self.lastYear = lastYear
+		self.cellCount = cells.count
 		node.name = "Merged prisms"
-		node.movabilityHint = .movable
+		node.geometry = geometry
+		
+		#if DEBUG
+		GlobePerf.endMergedBuild(signpost, visible: cells.count)
+		GlobePerf.logMergedSetup(
+			cells: cells.count, columns: values.columns, buildMs: Date().timeIntervalSince(buildStart) * 1_000,
+			vertexMB: Double(cells.count * template.positions.count * MergedPrismLayer.bytesPerVertex) / 1_048_576,
+			textureMB: Double(values.columns * cells.count * MemoryLayout<Float>.size) / 1_048_576
+		)
+		#endif
 	}
 	
-	/// Main thread only. Requests arriving while a build runs are coalesced to the latest one.
-	func update(year: Int, policy: Bool, completion: (() -> Void)? = nil) {
-		if let completion = completion {
-			pendingCompletions.append(completion)
-		}
-		if isBuilding {
-			if pendingRequest != nil {
-				coalescedRequests += 1
+	/// Main thread. Moves the displayed year and policy blend linearly from where they are now; intermediate years are shown on the way.
+	func update(year: Int, policy: Bool, duration: CFTimeInterval = MergedPrismLayer.animationDuration, completion: (() -> Void)? = nil) {
+		let target = State(year: Double(min(max(year, 0), lastYear)), policy: policy ? 1 : 0)
+		let start = readState()
+		let generation = restartState()
+		if duration <= 0 || start == target {
+			apply(target, generation: generation)
+		} else {
+			let advance = SCNAction.customAction(duration: duration) { [weak self] _, elapsed in
+				let t = min(1, Double(elapsed) / duration)
+				let state = State(
+					year: start.year + (target.year - start.year) * t,
+					policy: start.policy + (target.policy - start.policy) * t
+				)
+				self?.apply(state, generation: generation)
 			}
-			pendingRequest = (year, policy)
+			let finish = SCNAction.run { [weak self] _ in self?.apply(target, generation: generation) }
+			node.runAction(.sequence([advance, finish]), forKey: MergedPrismLayer.animationKey)
+		}
+		completion?()
+	}
+	
+	/// Main thread, once per scroll step: shows a fractional year index directly, stopping any animation.
+	func scrub(to year: Double, policy: Bool) {
+		let generation = restartState()
+		apply(State(year: min(max(year, 0), Double(lastYear)), policy: policy ? 1 : 0), generation: generation)
+	}
+	
+	// MARK: - Displayed state
+	
+	private func restartState() -> Int {
+		node.removeAction(forKey: MergedPrismLayer.animationKey)
+		stateLock.lock()
+		stateGeneration += 1
+		let generation = stateGeneration
+		stateLock.unlock()
+		return generation
+	}
+	
+	private func apply(_ state: State, generation: Int) {
+		stateLock.lock()
+		guard generation == stateGeneration else {
+			stateLock.unlock()
 			return
 		}
-		startBuild(year: year, policy: policy)
+		renderedState = state
+		stateLock.unlock()
+		material.setValue(state.year, forKey: "prismYear")
+		material.setValue(state.policy, forKey: "prismPolicy")
+		onStateChanged?(state)
 	}
 	
-	private func startBuild(year: Int, policy: Bool) {
-		isBuilding = true
-		let completions = pendingCompletions
-		pendingCompletions = []
-		let coalesced = coalescedRequests
-		coalescedRequests = 0
-		let requested = Date()
-		
-		let cells = self.cells
-		let shape = self.shape
-		let template = self.template
-		let element = self.element
-		let material = self.material
-		
-		queue.async { [weak self] in
-			#if DEBUG
-			let signpost = GlobePerf.beginMergedBuild(year: year, policy: policy)
-			#endif
-			let buildStart = Date()
-			let vertices = MergedPrismLayer.buildVertices(
-				year: year, policy: policy, cells: cells, shape: shape, template: template
-			)
-			let visibleCount = vertices.visibleCount
-			let buildMs = Date().timeIntervalSince(buildStart) * 1_000
-			#if DEBUG
-			GlobePerf.endMergedBuild(signpost, visible: visibleCount)
-			#endif
-			
-			DispatchQueue.main.async {
-				guard let self = self else { return }
-				let applyStart = Date()
-				// SceneKit objects are created here: the shared material is also used by the render thread.
-				let geometry = MergedPrismLayer.makeGeometry(vertices, element: element, material: material)
-				SCNTransaction.begin()
-				SCNTransaction.animationDuration = 0
-				self.node.geometry = geometry
-				SCNTransaction.commit()
-				self.onApplied?(year, policy)
-				let applyMs = Date().timeIntervalSince(applyStart) * 1_000
-				
-				#if DEBUG
-				GlobePerf.logMergedUpdate(
-					year: year, policy: policy, cells: cells.count, visible: visibleCount,
-					queueWaitMs: buildStart.timeIntervalSince(requested) * 1_000,
-					buildMs: buildMs, applyMs: applyMs,
-					totalMs: Date().timeIntervalSince(requested) * 1_000,
-					coalesced: coalesced
-				)
-				#endif
-				
-				self.isBuilding = false
-				completions.forEach { $0() }
-				if let next = self.pendingRequest {
-					self.pendingRequest = nil
-					self.startBuild(year: next.year, policy: next.policy)
+	private func readState() -> State {
+		stateLock.lock()
+		defer { stateLock.unlock() }
+		return renderedState
+	}
+	
+	// MARK: - Static data
+	
+	/// Position (float3), growth per unit value (float3), normal (float3), cell index (float2).
+	private static let bytesPerVertex = 11 * MemoryLayout<Float>.size
+	
+	private static func makeValueTexture(cells: Cells, lastYear: Int, policyStart: Int, device: MTLDevice) -> (texture: MTLTexture, columns: Int, maxValues: [Float])? {
+		let baseColumns = lastYear + 1
+		let columns = baseColumns + (baseColumns - policyStart)
+		guard columns <= maxTextureSize else { return nil }
+		var values = [Float](repeating: 0, count: columns * cells.count)
+		var maxValues = [Float](repeating: 0, count: cells.count)
+		for i in 0..<cells.count {
+			let row = i * columns
+			var maxValue: Float = 0
+			for year in 0..<min(cells.yearCount(cell: i), baseColumns) {
+				let base = cells.value(cell: i, year: year, policy: false) ?? 0
+				values[row + year] = base
+				maxValue = max(maxValue, base)
+				if year >= policyStart {
+					let policy = cells.value(cell: i, year: year, policy: true) ?? 0
+					values[row + baseColumns + year - policyStart] = policy
+					maxValue = max(maxValue, policy)
 				}
 			}
+			maxValues[i] = maxValue
 		}
+		
+		let descriptor = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .r32Float, width: columns, height: cells.count, mipmapped: false)
+		descriptor.usage = .shaderRead
+		guard let texture = device.makeTexture(descriptor: descriptor) else { return nil }
+		values.withUnsafeBytes { raw in
+			texture.replace(
+				region: MTLRegionMake2D(0, 0, columns, cells.count), mipmapLevel: 0,
+				withBytes: raw.baseAddress!, bytesPerRow: columns * MemoryLayout<Float>.size
+			)
+		}
+		return (texture, columns, maxValues)
 	}
 	
-	// MARK: - Geometry
-	
-	private struct Vertices {
-		let positions: Data
-		let normals: Data
-		let vertexCount: Int
-		let visibleCount: Int
-	}
-	
-	private static func makeGeometry(_ vertices: Vertices, element: SCNGeometryElement, material: SCNMaterial) -> SCNGeometry {
-		let positionSource = makeSource(vertices.positions, semantic: .vertex, vectorCount: vertices.vertexCount)
-		let normalSource = makeSource(vertices.normals, semantic: .normal, vectorCount: vertices.vertexCount)
-		let geometry = SCNGeometry(sources: [positionSource, normalSource], elements: [element])
-		geometry.materials = [material]
-		return geometry
-	}
-	
-	private static func buildVertices(year: Int, policy: Bool, cells: Cells, shape: Shape, template: Template) -> Vertices {
+	private static func makeGeometry(cells: Cells, shape: Shape, template: Template, maxValues: [Float]) -> SCNGeometry {
 		let verticesPerCell = template.positions.count
 		let vertexCount = cells.count * verticesPerCell
 		var positions = [Float](repeating: 0, count: vertexCount * 3)
+		var growths = [Float](repeating: 0, count: vertexCount * 3)
 		var normals = [Float](repeating: 0, count: vertexCount * 3)
-		var visibleCount = 0
+		var cellIndices = [Float](repeating: 0, count: vertexCount * 2)
 		
-		positions.withUnsafeMutableBufferPointer { pos in
-			normals.withUnsafeMutableBufferPointer { nor in
-				template.positions.withUnsafeBufferPointer { templatePositions in
-					template.normals.withUnsafeBufferPointer { templateNormals in
-						for i in 0..<cells.count {
-							// Hidden cells keep zeroed vertices, i.e. degenerate triangles that rasterize nothing.
-							guard let value = cells.value(cell: i, year: year, policy: policy), value > shape.threshold else { continue }
-							visibleCount += 1
-							
-							let height = value * shape.heightFactor
-							let width = shape.widthSocket + value * shape.widthFactor
-							let scale = SIMD3<Float>(width, height, width) * shape.scaleCorrection
-							let translation = SIMD3<Float>(0, shape.baseRadius + 0.5 * height, 0)
-							let rotation = cells.rotations[i]
-							
-							var offset = i * verticesPerCell * 3
-							for k in 0..<verticesPerCell {
-								let p = rotation * (templatePositions[k] * scale + translation)
-								let n = simd_normalize(rotation * (templateNormals[k] / scale))
-								pos[offset] = p.x
-								pos[offset + 1] = p.y
-								pos[offset + 2] = p.z
-								nor[offset] = n.x
-								nor[offset + 1] = n.y
-								nor[offset + 2] = n.z
-								offset += 3
-							}
-						}
-					}
-				}
+		let c = shape.scaleCorrection
+		let baseScale = SIMD3<Float>(shape.widthSocket, 0, shape.widthSocket) * c
+		let baseTranslation = SIMD3<Float>(0, shape.baseRadius, 0)
+		let growthScale = SIMD3<Float>(shape.widthFactor, shape.heightFactor, shape.widthFactor) * c
+		let growthTranslation = SIMD3<Float>(0, 0.5 * shape.heightFactor, 0)
+		// Normals do not depend on the value (vertical sides, flat caps); prisms of this value are about as tall as wide.
+		let normalReferenceValue: Float = 15
+		let normalScale = baseScale + normalReferenceValue * growthScale
+		var lower = SIMD3<Float>(repeating: .greatestFiniteMagnitude)
+		var upper = SIMD3<Float>(repeating: -.greatestFiniteMagnitude)
+		
+		for i in 0..<cells.count {
+			let rotation = cells.rotations[i]
+			var o3 = i * verticesPerCell * 3
+			var o2 = i * verticesPerCell * 2
+			for k in 0..<verticesPerCell {
+				let t = template.positions[k]
+				let a = rotation * (t * baseScale + baseTranslation)
+				let b = rotation * (t * growthScale + growthTranslation)
+				let n = simd_normalize(rotation * (template.normals[k] / normalScale))
+				let top = a + maxValues[i] * b
+				lower = simd_min(lower, simd_min(a, top))
+				upper = simd_max(upper, simd_max(a, top))
+				positions[o3] = a.x; positions[o3 + 1] = a.y; positions[o3 + 2] = a.z
+				growths[o3] = b.x; growths[o3 + 1] = b.y; growths[o3 + 2] = b.z
+				normals[o3] = n.x; normals[o3 + 1] = n.y; normals[o3 + 2] = n.z
+				cellIndices[o2] = Float(i)
+				o3 += 3
+				o2 += 2
 			}
 		}
 		
-		return Vertices(
-			positions: positions.withUnsafeBufferPointer { Data(buffer: $0) },
-			normals: normals.withUnsafeBufferPointer { Data(buffer: $0) },
-			vertexCount: vertexCount,
-			visibleCount: visibleCount
+		let geometry = SCNGeometry(
+			sources: [
+				makeSource(positions, semantic: .vertex, components: 3),
+				makeSource(normals, semantic: .normal, components: 3),
+				makeSource(growths, semantic: .color, components: 3),
+				makeSource(cellIndices, semantic: .texcoord, components: 2)
+			],
+			elements: [makeElement(cellCount: cells.count, template: template)]
 		)
+		// Bounds come from the static positions otherwise, which would let SceneKit cull tall prisms.
+		geometry.boundingBox = (SCNVector3(lower), SCNVector3(upper))
+		return geometry
 	}
 	
-	private static func makeSource(_ data: Data, semantic: SCNGeometrySource.Semantic, vectorCount: Int) -> SCNGeometrySource {
+	private static func makeSource(_ values: [Float], semantic: SCNGeometrySource.Semantic, components: Int) -> SCNGeometrySource {
 		return SCNGeometrySource(
-			data: data, semantic: semantic, vectorCount: vectorCount,
-			usesFloatComponents: true, componentsPerVector: 3,
+			data: values.withUnsafeBufferPointer { Data(buffer: $0) }, semantic: semantic,
+			vectorCount: values.count / components,
+			usesFloatComponents: true, componentsPerVector: components,
 			bytesPerComponent: MemoryLayout<Float>.size,
-			dataOffset: 0, dataStride: 3 * MemoryLayout<Float>.size
+			dataOffset: 0, dataStride: components * MemoryLayout<Float>.size
 		)
 	}
 	

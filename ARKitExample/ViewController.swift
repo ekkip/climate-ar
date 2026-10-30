@@ -791,11 +791,14 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 		case timeScrollView:
 			focusTimeScrollView.contentOffset = timeScrollView.contentOffset
 			
-			currentYear = min(max(0, Int(round(350 * timeScrollView.contentOffset.x / 2_800))), 349)
+			let yearPosition = Double(350 * timeScrollView.contentOffset.x / 2_800)
+			currentYear = min(max(0, Int(yearPosition.rounded())), 349)
 			
 			setThermometer()
 			setPanelVisibilities()
-//			setGlobe()
+			if globe.canUpdateYearWhileScrolling && (scrollView.isTracking || scrollView.isDecelerating) {
+				globe.scrubYear(to: yearPosition)
+			}
 
 		case introductionScrollView:
 			introductionPageControl.goTo(Int(round(Float(scrollView.contentOffset.x / scrollView.frame.size.width))))

@@ -10,7 +10,7 @@
 
 Filter the Xcode console for: `[GlobePerf]`, `[GlobeMergedPerf]`, `[GlobeYearPerf]`, `[ClimatePolicyPerf]`.
 
-- `[GlobeMergedPerf]` (merged renderer, default): `build(background)` is the off-main vertex rebuild, `apply(main)` is the main-thread cost of swapping the geometry, `coalesced` counts superseded requests. Ends with `thermal=` and `lowPower=`.
+- `[GlobeMergedPerf] setup` (merged renderer, default): printed once while loading, with the one-time mesh and value-texture build time and sizes. Updates have no per-update cost to log; judge them by smoothness and the `hitches during …` lines.
 - `[GlobePerf] hitches during <operation>`: main-thread frame gaps over 50 ms during the 3 seconds after a year change or policy toggle starts (a new operation closes the previous window early). `stallMs` is the total time lost beyond one frame per hitch. Also reports thermal state and Low Power Mode.
 - `[GlobeYearPerf]` / `[ClimatePolicyPerf]`: only with `Globe.useMergedPrismRenderer = false` (per-node path).
 
@@ -25,13 +25,13 @@ The SceneKit statistics overlay (`showsStatistics`) stays off: with the fraction
 | System Trace | Freezes with idle threads | Main-thread states (Blocked/Running), run-loop mode, UIKit `_UIUpdateSequence` activity |
 | Allocations / Leaks | Memory | Growth across repeated loads |
 
-Points of Interest signposts (Debug): `GlobeLoadModel`, `MergedPrismBuild`, `GlobeYearRefresh`, `GlobeYearAnimation`, `ClimatePolicyToggle`.
+Points of Interest signposts (Debug): `GlobeLoadModel`, `MergedPrismBuild` (one-time setup), `GlobeYearRefresh`, `GlobeYearAnimation`, `ClimatePolicyToggle`.
 
 ## Protocol
 
 1. **Cold load:** kill the app, launch fresh, wait until the globe is loadable. Note `[GlobePerf] GlobeLoadModel` ms, prism count (~14591), resident MB.
 2. **Repeated appearance:** background and foreground 5 times. Expect no second `GlobeLoadModel` and flat memory.
-3. **Timeline and policy:** scrub to 2018, let scrolling stop, toggle policy on and off; repeat at 2036 and 2099. Note the `[GlobeMergedPerf]` line, the following `hitches during …` line, and whether a freeze was felt.
+3. **Timeline and policy:** scrub to 2018, let scrolling stop, toggle policy on and off; repeat at 2036 and 2099. Note the `hitches during …` line and whether a freeze was felt.
 4. **Local data:** repeat step 3 with "Display local data" on and off.
 5. **A/B against the per-node path:** set `Globe.useMergedPrismRenderer = false`, repeat step 3, compare draw calls, hitch lines, and memory.
 

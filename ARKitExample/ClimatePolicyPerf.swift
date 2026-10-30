@@ -183,8 +183,8 @@ enum GlobePerf {
 		os_signpost(.end, log: log, name: "MergedPrismBuild", signpostID: id, "visible=%{public}d", visible)
 	}
 	
-	static func logMergedUpdate(year: Int, policy: Bool, cells: Int, visible: Int, queueWaitMs: Double, buildMs: Double, applyMs: Double, totalMs: Double, coalesced: Int) {
-		debugPrint("[GlobeMergedPerf] calendarYear=\(year + 1750) indexYear=\(year) policyOn=\(policy) cells=\(cells) visible=\(visible) coalesced=\(coalesced) memMB=\(residentMemoryMB().friendlyString()) \(deviceState())\ntimingMs: queueWait=\(queueWaitMs.friendlyString()) build(background)=\(buildMs.friendlyString()) apply(main)=\(applyMs.friendlyString()) total=\(totalMs.friendlyString())")
+	static func logMergedSetup(cells: Int, columns: Int, buildMs: Double, vertexMB: Double, textureMB: Double) {
+		debugPrint("[GlobeMergedPerf] setup cells=\(cells) yearColumns=\(columns) build=\(buildMs.friendlyString())ms vertexMB=\(vertexMB.friendlyString()) textureMB=\(textureMB.friendlyString()) memMB=\(residentMemoryMB().friendlyString()) \(deviceState())")
 	}
 	
 	static func deviceState() -> String {

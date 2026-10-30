@@ -18,7 +18,7 @@ class Globe: VirtualObject {
 	/// Animate prism height only when the settled year changes by at most this many indices.
 	static let maxAnimatedYearStep = 3
 	
-	/// true: all prisms are one mesh (one draw call), rebuilt off the main thread, no height animation.
+	/// true: all prisms are one mesh (one draw call) built once; heights are computed on the GPU from a value texture.
 	/// false: one SceneKit node per prism (~13k draw calls at modern years), kept for A/B comparison.
 	static var useMergedPrismRenderer = true
 	
@@ -167,15 +167,18 @@ class Globe: VirtualObject {
 			)
 			if let templateGeometry = prismTemplate.childNodes.first?.geometry,
 				let layer = MergedPrismLayer(cells: mergedCells, shape: shape, templateGeometry: templateGeometry) {
-				layer.onApplied = { [weak self] year, policy in
-					self?.updateTooltipAnchors(year: year, policy: policy)
+				let anchors = prismsWithTooltips
+				layer.onStateChanged = { state in
+					for anchor in anchors {
+						anchor.placeTooltip(value: anchor.value(at: state.year, policyWeight: Float(state.policy)))
+					}
 				}
 				gridContainer.addChildNode(layer.node)
 				mergedPrisms = layer
 				let year = currentYear
 				let policy = climatePolicy
 				DispatchQueue.main.async {
-					layer.update(year: year, policy: policy)
+					layer.update(year: year, policy: policy, duration: 0)
 				}
 			} else {
 				debugPrint("[Globe] Prism template geometry could not be merged; no prisms will be shown.")
@@ -196,11 +199,36 @@ class Globe: VirtualObject {
 		#endif
 	}
 	
-	private func updateTooltipAnchors(year: Int, policy: Bool) {
+	/// Labels show whole years; heights and visibility follow the displayed state via `onStateChanged`.
+	private func setTooltipLabels(year: Int, policy: Bool) {
 		for anchor in prismsWithTooltips {
-			anchor.climatePolicy = policy
-			anchor.updateTooltipAnchor(year: year)
+			anchor.setTooltipLabel(year: year, policy: policy)
 		}
+	}
+	
+	// MARK: - Scrubbing the timeline
+	
+	/// Settling from a fractional to a whole year after scrolling moves at most half a year.
+	static let settleAfterScrubDuration: CFTimeInterval = 0.25
+	
+	/// Set while heights show a fractional year; the next `setYear` settles even if the rounded year is unchanged.
+	private var isScrubbed = false
+	
+	var canUpdateYearWhileScrolling: Bool {
+		return mergedPrisms != nil && LiveGlobeUpdates.isSupported
+	}
+	
+	/// Called for every scroll step with a fractional year index; heights and tooltips follow without animation or rebuilds.
+	func scrubYear(to position: Double) {
+		guard let layer = mergedPrisms else { return }
+		let clamped = min(max(position, 0), Double(layer.lastYear))
+		isScrubbed = true
+		let year = Int(clamped.rounded())
+		if year != currentYear {
+			currentYear = year
+			setTooltipLabels(year: year, policy: climatePolicy)
+		}
+		layer.scrub(to: clamped, policy: climatePolicy)
 	}
 	
 	var animating = false
@@ -217,10 +245,13 @@ class Globe: VirtualObject {
 		}
 		
 		if let layer = mergedPrisms {
-			guard year != currentYear else { return }
+			guard year != currentYear || isScrubbed else { return }
+			let duration = isScrubbed ? Globe.settleAfterScrubDuration : MergedPrismLayer.animationDuration
+			isScrubbed = false
 			currentYear = year
 			MainThreadHitchMonitor.shared.beginWindow("year \(year + 1750)")
-			layer.update(year: year, policy: climatePolicy)
+			setTooltipLabels(year: year, policy: climatePolicy)
+			layer.update(year: year, policy: climatePolicy, duration: duration)
 			return
 		}
 		
@@ -240,13 +271,15 @@ class Globe: VirtualObject {
 	
 	func applyClimatePolicySimulation(_ on: Bool, at year: Int, completion: (() -> Void)? = nil) {
 		if let layer = mergedPrisms {
-			if year == currentYear && on == climatePolicy {
+			if year == currentYear && on == climatePolicy && !isScrubbed {
 				completion?()
 				return
 			}
+			isScrubbed = false
 			currentYear = year
 			climatePolicy = on
 			MainThreadHitchMonitor.shared.beginWindow("policy \(on ? "on" : "off") at \(year + 1750)")
+			setTooltipLabels(year: year, policy: on)
 			layer.update(year: year, policy: on, completion: completion)
 			return
 		}
@@ -444,4 +477,28 @@ class Globe: VirtualObject {
 		}
 	}
 	
+}
+
+/// Decides whether the globe follows the timeline while scrolling or only updates after the scroll ends.
+enum LiveGlobeUpdates {
+	/// Launch argument `-LiveGlobeUpdates YES` / `NO` overrides the device check (e.g. in the scheme's Run arguments).
+	private static let overrideKey = "LiveGlobeUpdates"
+	
+	/// A12 (Metal GPU family Apple 5) or newer. Scrubbing only updates two shader uniforms per scroll step,
+	/// so the limit is rendering the AR globe at all rather than scrubbing.
+	static let isCapableHardware: Bool = {
+		guard let device = MTLCreateSystemDefaultDevice() else { return false }
+		return device.supportsFamily(.apple5)
+	}()
+	
+	/// Re-evaluated per scroll step, so the app falls back to after-scroll updates under Low Power Mode or heat.
+	static var isSupported: Bool {
+		if UserDefaults.standard.object(forKey: overrideKey) != nil {
+			return UserDefaults.standard.bool(forKey: overrideKey)
+		}
+		let info = ProcessInfo.processInfo
+		return isCapableHardware
+			&& !info.isLowPowerModeEnabled
+			&& info.thermalState.rawValue < ProcessInfo.ThermalState.serious.rawValue
+	}
 }
