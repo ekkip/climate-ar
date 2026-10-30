@@ -56,6 +56,9 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 	override func viewDidAppear(_ animated: Bool) {
 		super.viewDidAppear(animated)
 
+		#if DEBUG
+		MainThreadHitchMonitor.shared.start()
+		#endif
 		setupGlobe()
 		
 		// Prevent the screen from being dimmed after a while.
@@ -73,6 +76,9 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 	
 	override func viewWillDisappear(_ animated: Bool) {
 		super.viewWillDisappear(animated)
+		#if DEBUG
+		MainThreadHitchMonitor.shared.stop()
+		#endif
 		session.pause()
 	}
 
@@ -131,6 +137,7 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 		
 		sceneView.preferredFramesPerSecond = 60
 		sceneView.contentScaleFactor = 1.3
+		// With the fractional contentScaleFactor, the statistics overlay's scissor rect exceeds the render pass by 1px and fails Metal API validation.
 		sceneView.showsStatistics = false
 		
 		debugPrint("view.frame: \(view.frame)")
@@ -207,39 +214,30 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
     // MARK: - ARSCNViewDelegate
 	let ambientIntensityQuotient: CGFloat = 80
 	var lastLightIntensityEstimate: CGFloat = 0
+	/// Only touched on the SceneKit render thread.
+	private var appliedEnvironmentIntensity: CGFloat = -1
+	
 	func renderer(_ renderer: SCNSceneRenderer, updateAtTime time: TimeInterval) {
-		
-//		debugPrint("Globe is in scene: \(globe.parent != nil)")
-//		sceneView.scene.rootNode.printNodeHierarchy()
-		
-//		var timestamp = print(intervalSince: Date(), string: "Flag0")
 		refreshFeaturePoints()
 		
+		// Queue main-thread work only when something changed; a block per frame keeps the main thread in lockstep with the renderer.
+		let needsFocusSquare = globeState != .placed
+		let showsHitTests = hitTestVisualization != nil
+		let intensity = session.currentFrame?.lightEstimate.map { $0.ambientIntensity / ambientIntensityQuotient } ?? 10
+		let intensityChanged = abs(intensity - appliedEnvironmentIntensity) > max(0.05 * appliedEnvironmentIntensity, 0.1)
+		if intensityChanged {
+			appliedEnvironmentIntensity = intensity
+		}
+		guard needsFocusSquare || showsHitTests || intensityChanged else { return }
+		
 		DispatchQueue.main.async {
-//			var timestamp = print(intervalSince: Date(), string: "Flag1")
-			self.updateFocusSquare()
-//			timestamp = print(intervalSince: timestamp, string: "Flag2")
-			self.hitTestVisualization?.render()
-			
-//			// If light estimation is enabled, update the intensity of the model's lights and the environment map
-//			if let lightEstimate = self.session.currentFrame?.lightEstimate {
-//				if abs(lightEstimate.ambientIntensity - self.lastLightIntensityEstimate) > 50 {
-//					debugPrint("lightEstimate.ambientIntensity: \(lightEstimate.ambientIntensity)")
-//					self.lastLightIntensityEstimate = lightEstimate.ambientIntensity
-//				}
-//				self.enableEnvironmentMapWithIntensity(lightEstimate.ambientIntensity / self.ambientIntensityQuotient)
-//			} else {
-//				debugPrint("Frame has no lightEstimate -> applying \(1000/self.ambientIntensityQuotient) …")
-//				self.enableEnvironmentMapWithIntensity(1000/self.ambientIntensityQuotient)
-//			}
-			
-//			timestamp = print(intervalSince: timestamp, string: "Flag3")
-			if let lightEstimate = self.session.currentFrame?.lightEstimate {
-				self.enableEnvironmentMapWithIntensity(lightEstimate.ambientIntensity / self.ambientIntensityQuotient)
-			} else {
-				self.enableEnvironmentMapWithIntensity(10)
+			if needsFocusSquare {
+				self.updateFocusSquare()
 			}
-//			timestamp = print(intervalSince: timestamp, string: "Flag4")
+			self.hitTestVisualization?.render()
+			if intensityChanged {
+				self.enableEnvironmentMapWithIntensity(intensity)
+			}
 		}
 	}
 	
@@ -637,7 +635,13 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 	}
 	
 	func loadVirtualObject(at index: Int, placeObject: Bool = true) {
-		debugPrint("\(#function)")
+		if globe.globePrismsLoaded {
+			finishVirtualObjectLoadUI(placeObject: placeObject)
+			return
+		}
+		if isLoadingObject {
+			return
+		}
 		
 		// Show progress indicator
 		let spinner = UIActivityIndicatorView()
@@ -657,34 +661,24 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 			self.globe.loadModel()
 			
 			DispatchQueue.main.async {
-				// Immediately place the object in 3D space.
-				if let lastFocusSquarePos = self.focusSquare?.lastPosition, placeObject {
-					self.setNewVirtualObjectPosition(lastFocusSquarePos)
-				} else {
-					self.setNewVirtualObjectPosition(SCNVector3Zero)
-				}
-				
-				// Remove progress indicator
+				self.finishVirtualObjectLoadUI(placeObject: placeObject)
 				spinner.removeFromSuperview()
-				
-				self.textManager.showMessage("TAP TO PLACE", autoHide: false)
-				
-				// Update the icon of the add object button
-				self.isLoadingObject = false
-				self.globeState = .loaded
-				
-				self.setupFocusSquare()
-				
-				self.checkIntroductionVisible("FLAG 1")
-				
-				var timerCounter = 2
-				Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true, block: { (_) in
-					self.checkIntroductionVisible("FLAG \(timerCounter)")
-					timerCounter += 1
-				}).fire()
 			}
 		}
     }
+	
+	private func finishVirtualObjectLoadUI(placeObject: Bool) {
+		if let lastFocusSquarePos = focusSquare?.lastPosition, placeObject {
+			setNewVirtualObjectPosition(lastFocusSquarePos)
+		} else if !globe.globePrismsLoaded {
+			setNewVirtualObjectPosition(SCNVector3Zero)
+		}
+		
+		textManager.showMessage("TAP TO PLACE", autoHide: false)
+		isLoadingObject = false
+		globeState = .loaded
+		setupFocusSquare()
+	}
 	
 	
 	// MARK: - Globe
@@ -716,11 +710,19 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 //	}
 	
 	func setupGlobe() {
-		globeState = .loading
-		loadVirtualObject(at: 0, placeObject: false)
 		let preserveScrollYear = globeTimeSliderContentInstalled
 		installGlobeTimeSliderContentIfNeeded()
 		updateGlobeTimeSliderLayout(preserveYear: preserveScrollYear)
+		
+		if globe.globePrismsLoaded {
+			if globeState == .loading {
+				globeState = .loaded
+			}
+			return
+		}
+		guard !isLoadingObject else { return }
+		globeState = .loading
+		loadVirtualObject(at: 0, placeObject: false)
 	}
 	
 	func placeGlobe() {
@@ -739,6 +741,7 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 		}
 		globeState = .placed
 		textManager.showHideMessage(hide: true, animated: true)
+		stopPlaneDetection()
 
         setThermometer()
         
@@ -787,7 +790,6 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 		
 		case timeScrollView:
 			focusTimeScrollView.contentOffset = timeScrollView.contentOffset
-            debugPrint("\(#function): contentOffset = \(timeScrollView.contentOffset)")
 			
 			currentYear = min(max(0, Int(round(350 * timeScrollView.contentOffset.x / 2_800))), 349)
 			
@@ -935,6 +937,14 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 		textManager.scheduleMessage("FIND A SURFACE TO PLACE AN OBJECT",
 		                            inSeconds: 7.5,
 		                            messageType: .planeEstimation)
+	}
+	
+	/// On LiDAR devices plane detection keeps scene reconstruction and image segmentation running; once the globe is placed it is not needed. `restartPlaneDetection()` turns it back on.
+	func stopPlaneDetection() {
+		guard let worldSessionConfig = sessionConfig as? ARWorldTrackingConfiguration,
+			  !worldSessionConfig.planeDetection.isEmpty else { return }
+		worldSessionConfig.planeDetection = []
+		session.run(worldSessionConfig)
 	}
 
     // MARK: - Focus Square
@@ -1122,8 +1132,9 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 		}
 
 		let megatons = globalCarbonAccumulated()[currentYear] * Const.cco2MassFactor
+		#if DEBUG
 		debugPrint("\(#function): \(megatons) Mt")
-		
+		#endif
 
         let newFrame = frame(from: CGFloat(megatons))
 		
@@ -1146,8 +1157,20 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 	
 	@objc func climatePolicySimulationSwitchValueChanged(_ sender: UISwitch) {
 		climatePolicySwitch.layer.borderWidth = climatePolicySwitch.isOn ? 0 : 2
+		climatePolicySwitch.isEnabled = false
+		
+		#if DEBUG
+		let perfStart = Date()
+		#endif
 		setThermometer()
-		globe.setYear(self.currentYear, climateSimulation: sender.isOn)
+		#if DEBUG
+		let thermometerMs = Date().timeIntervalSince(perfStart) * 1_000
+		debugPrint("[ClimatePolicyPerf] setThermometer: \(thermometerMs.friendlyString())ms")
+		#endif
+		
+		globe.applyClimatePolicySimulation(sender.isOn, at: currentYear) { [weak self] in
+			self?.climatePolicySwitch.isEnabled = true
+		}
 	}
 	
 	// MARK: - Overlays
