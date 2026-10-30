@@ -23,12 +23,14 @@
 		6917D5D81FA7623C001A569A /* Prism.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6917D5D71FA7623C001A569A /* Prism.swift */; };
 		6930B2491FBA213B00371632 /* Rubik-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 6930B2461FBA173900371632 /* Rubik-Light.ttf */; };
 		695DD3082140279E00BFB806 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 695DD3072140279E00BFB806 /* Constants.swift */; };
+		695DD3092140279E00BFB807 /* ClimatePolicyPerf.swift in Sources */ = {isa = PBXBuildFile; fileRef = 695DD30A2140279E00BFB807 /* ClimatePolicyPerf.swift */; };
 		695FCE4D1FD714B500C71C7B /* Rubik-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 695FCE4C1FD714AE00C71C7B /* Rubik-Medium.ttf */; };
 		699946801F6D950000B5C7BD /* Globe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6999467F1F6D950000B5C7BD /* Globe.swift */; };
+		699946821F6D950000B5C7BD /* MergedPrismLayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 699946831F6D950000B5C7BD /* MergedPrismLayer.swift */; };
+		699946841F6D950000B5C7BD /* RemindCellFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 699946851F6D950000B5C7BD /* RemindCellFile.swift */; };
 		699A87831FCDD44100585802 /* Tooltip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 699A87821FCDD44100585802 /* Tooltip.swift */; };
-		69A1CEDF2146F78E00EAE188 /* REMIND_26_v02_ACCU.json in Resources */ = {isa = PBXBuildFile; fileRef = 69A1CEDE2146F78E00EAE188 /* REMIND_26_v02_ACCU.json */; };
+		69A1CEE02146F78E00EAE188 /* REMIND_cells.bin in Resources */ = {isa = PBXBuildFile; fileRef = 69A1CEE12146F78E00EAE188 /* REMIND_cells.bin */; };
 		69A3BAA11FA8E80D009313AB /* Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69A3BAA01FA8E80D009313AB /* Extensions.swift */; };
-		69A3BAA21FA8E90B009313AB /* REMIND_BASE_v02_ACCU.json in Resources */ = {isa = PBXBuildFile; fileRef = 6965F7FB1FA8E3C900B6EBEA /* REMIND_BASE_v02_ACCU.json */; };
 		69C788321FBF51AB00D267C7 /* PolyPrism.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69C788311FBF51AB00D267C7 /* PolyPrism.swift */; };
 		69CF2E8B1FBAFCB70097C5DC /* Rubik-MediumItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 69CF2E8A1FBAFCB10097C5DC /* Rubik-MediumItalic.ttf */; };
 		69CF2E8D1FBB598F0097C5DC /* Rubik-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 69CF2E8C1FBB598A0097C5DC /* Rubik-Regular.ttf */; };
@@ -69,11 +71,15 @@
 		6917D5D71FA7623C001A569A /* Prism.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Prism.swift; sourceTree = "<group>"; };
 		6930B2461FBA173900371632 /* Rubik-Light.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Rubik-Light.ttf"; sourceTree = "<group>"; };
 		695DD3072140279E00BFB806 /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
+		695DD30A2140279E00BFB807 /* ClimatePolicyPerf.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClimatePolicyPerf.swift; sourceTree = "<group>"; };
 		695FCE4C1FD714AE00C71C7B /* Rubik-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Rubik-Medium.ttf"; sourceTree = "<group>"; };
 		6965F7FB1FA8E3C900B6EBEA /* REMIND_BASE_v02_ACCU.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = REMIND_BASE_v02_ACCU.json; sourceTree = "<group>"; };
 		6999467F1F6D950000B5C7BD /* Globe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Globe.swift; sourceTree = "<group>"; };
+		699946831F6D950000B5C7BD /* MergedPrismLayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MergedPrismLayer.swift; sourceTree = "<group>"; };
+		699946851F6D950000B5C7BD /* RemindCellFile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemindCellFile.swift; sourceTree = "<group>"; };
 		699A87821FCDD44100585802 /* Tooltip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tooltip.swift; sourceTree = "<group>"; };
 		69A1CEDE2146F78E00EAE188 /* REMIND_26_v02_ACCU.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = REMIND_26_v02_ACCU.json; sourceTree = "<group>"; };
+		69A1CEE12146F78E00EAE188 /* REMIND_cells.bin */ = {isa = PBXFileReference; lastKnownFileType = file; path = REMIND_cells.bin; sourceTree = "<group>"; };
 		69A3BAA01FA8E80D009313AB /* Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Extensions.swift; sourceTree = "<group>"; };
 		69C788311FBF51AB00D267C7 /* PolyPrism.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PolyPrism.swift; sourceTree = "<group>"; };
 		69CF2E8A1FBAFCB10097C5DC /* Rubik-MediumItalic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Rubik-MediumItalic.ttf"; sourceTree = "<group>"; };
@@ -157,6 +163,7 @@
 				C4FBC02A1EC6438B003F7864 /* ARCameraTrackingState.swift */,
 				39C0B9581E9C6B1F003FCA0C /* Utilities.swift */,
 				695DD3072140279E00BFB806 /* Constants.swift */,
+				695DD30A2140279E00BFB807 /* ClimatePolicyPerf.swift */,
 				69A3BAA01FA8E80D009313AB /* Extensions.swift */,
 				6965F7FC1FA8E3D800B6EBEA /* Data */,
 				6930B2451FBA170400371632 /* Fonts */,
@@ -185,6 +192,7 @@
 			children = (
 				69A1CEDE2146F78E00EAE188 /* REMIND_26_v02_ACCU.json */,
 				6965F7FB1FA8E3C900B6EBEA /* REMIND_BASE_v02_ACCU.json */,
+				69A1CEE12146F78E00EAE188 /* REMIND_cells.bin */,
 			);
 			path = Data;
 			sourceTree = "<group>";
@@ -209,6 +217,8 @@
 			children = (
 				C4E87DD81EA6B40F002117D6 /* VirtualObject.swift */,
 				6999467F1F6D950000B5C7BD /* Globe.swift */,
+				699946831F6D950000B5C7BD /* MergedPrismLayer.swift */,
+				699946851F6D950000B5C7BD /* RemindCellFile.swift */,
 				6917D5D71FA7623C001A569A /* Prism.swift */,
 				691192D41FACB2C1003C8165 /* HexPrism.swift */,
 				69C788311FBF51AB00D267C7 /* PolyPrism.swift */,
@@ -314,7 +324,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				6930B2491FBA213B00371632 /* Rubik-Light.ttf in Resources */,
-				69A3BAA21FA8E90B009313AB /* REMIND_BASE_v02_ACCU.json in Resources */,
+				69A1CEE02146F78E00EAE188 /* REMIND_cells.bin in Resources */,
 				3929C49F1E89EE4400E00B60 /* Models.scnassets in Resources */,
 				69CF2E8B1FBAFCB70097C5DC /* Rubik-MediumItalic.ttf in Resources */,
 				69CF2E8D1FBB598F0097C5DC /* Rubik-Regular.ttf in Resources */,
@@ -322,7 +332,6 @@
 				E1A100102E89EC2C00E00B6E /* Main.storyboard in Resources */,
 				695FCE4D1FD714B500C71C7B /* Rubik-Medium.ttf in Resources */,
 				3929C4931E89EC2C00E00B60 /* Assets.xcassets in Resources */,
-				69A1CEDF2146F78E00EAE188 /* REMIND_26_v02_ACCU.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -397,6 +406,7 @@
 				39C0B95A1E9C6B1F003FCA0C /* Utilities.swift in Sources */,
 				392BB82C1EA19A7C00FBBAC8 /* Plane.swift in Sources */,
 				695DD3082140279E00BFB806 /* Constants.swift in Sources */,
+				695DD3092140279E00BFB807 /* ClimatePolicyPerf.swift in Sources */,
 				3987BEDC1E9E057F00167FAC /* Gesture.swift in Sources */,
 				C4E87DD91EA6B40F002117D6 /* VirtualObject.swift in Sources */,
 				39D4A8BE1EA1AF530006EC65 /* PlaneDebugVisualization.swift in Sources */,
@@ -416,6 +426,8 @@
 				E1A100152E89EC2C00E00B73 /* ViewController+GlobeTimeSlider.swift in Sources */,
 				C4FBC02B1EC6438B003F7864 /* ARCameraTrackingState.swift in Sources */,
 				699946801F6D950000B5C7BD /* Globe.swift in Sources */,
+				699946821F6D950000B5C7BD /* MergedPrismLayer.swift in Sources */,
+				699946841F6D950000B5C7BD /* RemindCellFile.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
