@@ -9,11 +9,11 @@ import ARKit
 import UIKit
 
 extension ViewController {
-
+	
 	func buildRootLayout() {
 		view.backgroundColor = .white
 		view.insetsLayoutMarginsFromSafeArea = false
-
+		
 		sceneView = ARSCNView()
 		view.addSubview(sceneView)
 		sceneView.translatesAutoresizingMaskIntoConstraints = false
@@ -24,15 +24,29 @@ extension ViewController {
 			sceneView.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -StyleParams.sceneViewEdgeInset),
 		])
 
+		// MOVED FOR APP STORE IMAGERY ONLY!
+		buildMenuChrome()
+		// ADDED FOR APP STORE IMAGERY ONLY!
+		buildScenePreviewBackground()
+
 		buildMessagePanel()
 		buildGlobePlacementHintLabel()
 		buildGlobeControlPanel()
 		buildThermometerColumn()
 		buildOverlayBackground()
-		buildMenuChrome()
+		// MOVED FOR APP STORE IMAGERY ONLY!
+//		buildMenuChrome()
 		buildClimatePolicyPanel()
 	}
-
+	
+	private func buildScenePreviewBackground() {
+		let bgImageView = UIImageView(image: UIImage(named: "iPad 11 Sanssouci ohne UI"))
+		bgImageView.translatesAutoresizingMaskIntoConstraints = false
+		view.addSubview(bgImageView)
+		bgImageView.pinEdges(to: view)
+	}
+	
+	
 	private func buildMessagePanel() {
 		let blur = UIBlurEffect(style: .light)
 		let messageBlur = UIVisualEffectView(effect: blur)
