@@ -56,7 +56,7 @@ enum StyleParams {
 
 	static let menuButtonSize: CGFloat = 70
 	static let visibleMenuButtonSize: CGFloat = 24
-	static let visibleMenuButtonTopMargin: CGFloat = 36 + 200*834/1024
+	static let visibleMenuButtonTopMargin: CGFloat = 36 + 100*834/1024
 	/// Cover/outer canvas stays below this longest edge; unfolded inner display exceeds it.
 	static let innerDisplayLongestEdgeMin: CGFloat = 920
 	
