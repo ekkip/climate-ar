@@ -80,7 +80,7 @@
 		699946851F6D950000B5C7BD /* RemindCellFile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemindCellFile.swift; sourceTree = "<group>"; };
 		699A87821FCDD44100585802 /* Tooltip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tooltip.swift; sourceTree = "<group>"; };
 		69A1CEDE2146F78E00EAE188 /* REMIND_26_v02_ACCU.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = REMIND_26_v02_ACCU.json; sourceTree = "<group>"; };
-		69A1CEE12146F78E00EAE188 /* REMIND_cells.bin */ = {isa = PBXFileReference; lastKnownFileType = file; path = REMIND_cells.bin; sourceTree = "<group>"; };
+		69A1CEE12146F78E00EAE188 /* REMIND_cells.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; path = REMIND_cells.bin; sourceTree = "<group>"; };
 		69A3BAA01FA8E80D009313AB /* Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Extensions.swift; sourceTree = "<group>"; };
 		69C788311FBF51AB00D267C7 /* PolyPrism.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PolyPrism.swift; sourceTree = "<group>"; };
 		69CF2E8A1FBAFCB10097C5DC /* Rubik-MediumItalic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Rubik-MediumItalic.ttf"; sourceTree = "<group>"; };
