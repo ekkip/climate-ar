@@ -24,8 +24,6 @@ extension ViewController {
 			sceneView.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -StyleParams.sceneViewEdgeInset),
 		])
 
-		// MOVED FOR APP STORE IMAGERY ONLY!
-		buildMenuChrome()
 		// ADDED FOR APP STORE IMAGERY ONLY!
 		buildScenePreviewBackground()
 
@@ -34,8 +32,7 @@ extension ViewController {
 		buildGlobeControlPanel()
 		buildThermometerColumn()
 		buildOverlayBackground()
-		// MOVED FOR APP STORE IMAGERY ONLY!
-//		buildMenuChrome()
+		buildMenuChrome()
 		buildClimatePolicyPanel()
 	}
 	
