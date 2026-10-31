@@ -85,6 +85,11 @@ class FocusSquare: SCNNode {
 		}
 		updateTransform(for: position, camera: camera)
 	}
+
+	/// Clears averaged raycast history after the screen centre moves (rotation, resize).
+	func resetPositionSmoothing() {
+		recentFocusSquarePositions.removeAll()
+	}
 	
 	func hide() {
 		if self.opacity == 1.0 {

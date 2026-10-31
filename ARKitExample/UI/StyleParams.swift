@@ -30,6 +30,11 @@ enum StyleParams {
 	/// Panel bottom inset from the root view bottom (fixed pt; not `safeAreaLayoutGuide`).
 	/// Matches legacy storyboard spacing and leaves room for the 20 pt touch margin below the visible slider.
 	static var timeSliderPanelBottomInsetFromView: CGFloat { safeAreaMarginBottom }
+	static var globePlacementHintBottomInset: CGFloat { safeAreaMarginBottom }
+	static let globePlacementHintFontSize: CGFloat = 16
+	/// `true`: original ARKit sample top-left blur panel via `TextManager` ("TAP TO PLACE").
+	/// `false`: bottom Rubik label ("Tap globe to place").
+	static let useLegacyGlobePlacementMessage = false
 	/// Full-width drag strip: margin + slider + margin (20 + 36 + 20 = 76 pt).
 	static var timeSliderTouchRegionHeight: CGFloat {
 		timeSliderHeight + 2 * globeControlPanelVerticalMargin

@@ -25,6 +25,7 @@ extension ViewController {
 		])
 
 		buildMessagePanel()
+		buildGlobePlacementHintLabel()
 		buildGlobeControlPanel()
 		buildThermometerColumn()
 		buildOverlayBackground()
@@ -78,6 +79,28 @@ extension ViewController {
 		label.highlightedTextColor = .white
 		label.layer.shadowOffset = CGSize(width: 1, height: 1)
 		return label
+	}
+
+	private func buildGlobePlacementHintLabel() {
+		globePlacementHintLabel = UILabel()
+		globePlacementHintLabel.text = "Tap globe to place"
+		globePlacementHintLabel.font = UIFont.rubik(.regular, size: StyleParams.globePlacementHintFontSize)
+		globePlacementHintLabel.textColor = .white
+		globePlacementHintLabel.textAlignment = .center
+		globePlacementHintLabel.isUserInteractionEnabled = false
+		globePlacementHintLabel.isHidden = true
+		globePlacementHintLabel.layer.shadowColor = UIColor.black.cgColor
+		globePlacementHintLabel.layer.shadowOffset = CGSize(width: 0, height: 1)
+		globePlacementHintLabel.layer.shadowRadius = 2
+		globePlacementHintLabel.layer.shadowOpacity = 0.45
+		globePlacementHintLabel.translatesAutoresizingMaskIntoConstraints = false
+		view.addSubview(globePlacementHintLabel)
+
+		NSLayoutConstraint.activate([
+			globePlacementHintLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: StyleParams.globeControlHorizontalInset),
+			globePlacementHintLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -StyleParams.globeControlHorizontalInset),
+			globePlacementHintLabel.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -StyleParams.globePlacementHintBottomInset),
+		])
 	}
 
 	private func buildGlobeControlPanel() {

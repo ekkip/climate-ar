@@ -101,6 +101,7 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 	override func viewDidLayoutSubviews() {
 		super.viewDidLayoutSubviews()
 		updateGlobeTimeSliderLayout(preserveYear: true)
+		updatePlacementRaycastScreenCenterIfNeeded()
 		if introductionScrollView != nil {
 			updateIntroductionScrollLayout()
 		}
@@ -147,8 +148,7 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 		enableEnvironmentMapWithIntensity(25.0)
 		
 		DispatchQueue.main.async {
-//			self.screenCenter = self.sceneView.bounds.mid
-			self.screenCenter = CGPoint(x: self.sceneView.bounds.midX, y: self.sceneView.bounds.maxY * 0.75)
+			self.updatePlacementRaycastScreenCenterIfNeeded()
 		}
 		
 		if let camera = sceneView.pointOfView?.camera {
@@ -727,7 +727,11 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 	var focusScrollGradientMask: CAGradientLayer?
 	var focusScrollBackgroundLayer: CAGradientLayer?
 	
-	var globeState = GlobeState.loading
+	var globePlacementHintLabel: UILabel!
+
+	var globeState = GlobeState.loading {
+		didSet { updateGlobePlacementHintVisibility() }
+	}
 	var autoplayTimer: Timer? = nil {
 		willSet { self.autoplayTimer?.invalidate() }
 	}
@@ -739,6 +743,11 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 //		yearLabel.font = UIFont.rubikLight(size: 26)
 //	}
 	
+	func updateGlobePlacementHintVisibility() {
+		let useBottomLabel = !StyleParams.useLegacyGlobePlacementMessage
+		globePlacementHintLabel?.isHidden = !useBottomLabel || globeState != .loaded
+	}
+
 	func setupGlobe() {
 		let preserveScrollYear = globeTimeSliderContentInstalled
 		installGlobeTimeSliderContentIfNeeded()
@@ -979,6 +988,28 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 
     // MARK: - Focus Square
     var focusSquare: FocusSquare?
+
+	/// Screen point for placement raycasts (horizontal centre, upper field of view).
+	private func placementRaycastScreenPoint(in sceneView: ARSCNView) -> CGPoint {
+		CGPoint(x: sceneView.bounds.midX, y: sceneView.bounds.maxY * 0.75)
+	}
+
+	/// Keeps the ghost globe raycast aligned when bounds change (rotation, foldable display, etc.).
+	func updatePlacementRaycastScreenCenterIfNeeded() {
+		guard globeState != .placed else { return }
+		guard let sceneView else { return }
+
+		let newCenter = placementRaycastScreenPoint(in: sceneView)
+		if let previous = screenCenter,
+		   abs(previous.x - newCenter.x) < 0.5,
+		   abs(previous.y - newCenter.y) < 0.5 {
+			return
+		}
+
+		screenCenter = newCenter
+		focusSquare?.resetPositionSmoothing()
+		updateFocusSquare()
+	}
 	
     func setupFocusSquare() {
 		debugPrint("\(#function)")
@@ -1056,7 +1087,11 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
         didSet {
 			featurePointCountLabel.isHidden = !showDebugVisuals
 			debugMessageLabel.isHidden = !showDebugVisuals
-			messagePanel.isHidden = !showDebugVisuals
+			if StyleParams.useLegacyGlobePlacementMessage {
+				textManager.refreshMessagePanelVisibility()
+			} else {
+				messagePanel.isHidden = !showDebugVisuals
+			}
 			planes.values.forEach { $0.showDebugVisualization(showDebugVisuals) }
 			
 			if showDebugVisuals {
@@ -1093,6 +1128,10 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 		featurePointCountLabel.text = ""
 		debugMessageLabel.text = ""
 		messageLabel.text = ""
+		if StyleParams.useLegacyGlobePlacementMessage {
+			messageLabel.isHidden = true
+			textManager.refreshMessagePanelVisibility()
+		}
     }
 	
 	var restartExperienceButton: UIButton!
