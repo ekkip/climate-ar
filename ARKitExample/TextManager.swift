@@ -5,8 +5,9 @@ Abstract:
 Utility class for showing messages above the AR view.
 */
 
-import Foundation
 import ARKit
+import Foundation
+import UIKit
 
 enum MessageType {
 	case trackingStateEscalation
@@ -22,10 +23,8 @@ class TextManager {
 	}
 	
 	func showMessage(_ text: String, autoHide: Bool = true) {
-		
-		// Deactivated
-		return;
-		
+		guard StyleParams.useLegacyGlobePlacementMessage else { return }
+
 		// cancel any previous hide timer
 		messageHideTimer?.invalidate()
 		
@@ -262,6 +261,10 @@ class TextManager {
 		}, completion: nil)
 	}
 	
+	func refreshMessagePanelVisibility() {
+		updateMessagePanelVisibility()
+	}
+
 	private func updateMessagePanelVisibility() {
 		// Show and hide the panel depending whether there is something to show.
 		viewController.messagePanel.isHidden = viewController.messageLabel.isHidden &&
