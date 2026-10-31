@@ -11,7 +11,6 @@ import SceneKit
 import UIKit
 import Photos
 //import StyledString
-import SwiftyAttributes
 
 class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UIPopoverPresentationControllerDelegate, /*VirtualObjectSelectionViewControllerDelegate,*/ UIScrollViewDelegate {
 	
@@ -1474,9 +1473,13 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 	}
 	
 	func styled(_ string: String, _ fontStyle: UIFont.FontStyle, _ size: CGFloat) -> NSAttributedString {
-		
-//		return StyledString(string).with(font: UIFont.rubik(fontStyle, size: size))
-		return string.withFont(UIFont.rubik(fontStyle, size: size)).withTextColor(.white)
+		NSAttributedString(
+			string: string,
+			attributes: [
+				.font: UIFont.rubik(fontStyle, size: size),
+				.foregroundColor: UIColor.white,
+			]
+		)
 	}
 	
 	func setupCredits() {

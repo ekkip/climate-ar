@@ -8,5 +8,5 @@ target 'ARKitExample' do
   # Pods for ARKitExample
   #pod 'SwiftRichString', '~> 1.0.0'
   #pod 'StyledString', '~> 0.6.0'
-  pod 'SwiftyAttributes'
+  # SwiftyAttributes was removed — it was unused and broke Archive (Embed Pods Frameworks rsync).
 end

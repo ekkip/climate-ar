@@ -138,3 +138,10 @@ extension UIView {
 		layer.add(animation, forKey: CATransitionType.fade.rawValue)
 	}
 }
+
+func +(lhs: NSAttributedString, rhs: NSAttributedString) -> NSAttributedString {
+	let result = NSMutableAttributedString()
+	result.append(lhs)
+	result.append(rhs)
+	return result
+}

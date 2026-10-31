@@ -9,5 +9,3 @@
 // approach in your own projects—it's only useful for sample code projects because
 // they are frequently downloaded and don't have a development team set.
 SAMPLE_CODE_DISAMBIGUATOR=${DEVELOPMENT_TEAM}
-#include "../Pods/Target Support Files/Pods-ARKitExample/Pods-ARKitExample.debug.xcconfig"
-#include "../Pods/Target Support Files/Pods-ARKitExample/Pods-ARKitExample.release.xcconfig"

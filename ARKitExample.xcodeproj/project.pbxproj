@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		182A7CB04CF017D34A1579A4 /* Pods_ARKitExample.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F7F3D70C60AEA7172E5341BB /* Pods_ARKitExample.framework */; };
 		3929C48C1E89EC2C00E00B60 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3929C48B1E89EC2C00E00B60 /* AppDelegate.swift */; };
 		3929C48E1E89EC2C00E00B60 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3929C48D1E89EC2C00E00B60 /* ViewController.swift */; };
 		3929C4931E89EC2C00E00B60 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3929C4921E89EC2C00E00B60 /* Assets.xcassets */; };
@@ -102,7 +101,6 @@
 		E1A100132E89EC2C00E00B71 /* MenuChromeLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuChromeLayout.swift; sourceTree = "<group>"; };
 		E1A100142E89EC2C00E00B72 /* ViewController+GlobeTimeSlider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ViewController+GlobeTimeSlider.swift"; sourceTree = "<group>"; };
 		E1A100162E89EC2C00E00B74 /* TimeSliderTouchRegionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeSliderTouchRegionView.swift; sourceTree = "<group>"; };
-		F7F3D70C60AEA7172E5341BB /* Pods_ARKitExample.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_ARKitExample.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -110,7 +108,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				182A7CB04CF017D34A1579A4 /* Pods_ARKitExample.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -137,8 +134,6 @@
 				3929C4891E89EC2C00E00B60 /* Products */,
 				CC6CF3D48B06681D66F6DE20 /* Configuration */,
 				9C8A8E986AF37F2203F141AB /* LICENSE */,
-				C7E620C3B975F7199402FBDA /* Frameworks */,
-				745559EAF2C563F20CE23A6D /* Pods */,
 			);
 			sourceTree = "<group>";
 		};
@@ -199,13 +194,6 @@
 			path = Data;
 			sourceTree = "<group>";
 		};
-		745559EAF2C563F20CE23A6D /* Pods */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			name = Pods;
-			sourceTree = "<group>";
-		};
 		9C8A8E986AF37F2203F141AB /* LICENSE */ = {
 			isa = PBXGroup;
 			children = (
@@ -227,14 +215,6 @@
 				699A87821FCDD44100585802 /* Tooltip.swift */,
 			);
 			path = "Virtual Objects";
-			sourceTree = "<group>";
-		};
-		C7E620C3B975F7199402FBDA /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-				F7F3D70C60AEA7172E5341BB /* Pods_ARKitExample.framework */,
-			);
-			name = Frameworks;
 			sourceTree = "<group>";
 		};
 		CC6CF3D48B06681D66F6DE20 /* Configuration */ = {
@@ -268,12 +248,9 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 3929C49A1E89EC2C00E00B60 /* Build configuration list for PBXNativeTarget "ARKitExample" */;
 			buildPhases = (
-				492CD9ED5BF8DD6549B6EFE7 /* [CP] Check Pods Manifest.lock */,
 				3929C4841E89EC2C00E00B60 /* Sources */,
 				3929C4851E89EC2C00E00B60 /* Frameworks */,
 				3929C4861E89EC2C00E00B60 /* Resources */,
-				32BA2287426341AE775F5E05 /* [CP] Embed Pods Frameworks */,
-				796868622397D42BF0081059 /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -339,60 +316,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
-
-/* Begin PBXShellScriptBuildPhase section */
-		32BA2287426341AE775F5E05 /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-				"${SRCROOT}/Pods/Target Support Files/Pods-ARKitExample/Pods-ARKitExample-frameworks.sh",
-				"${BUILT_PRODUCTS_DIR}/SwiftyAttributes/SwiftyAttributes.framework",
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputPaths = (
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/SwiftyAttributes.framework",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-ARKitExample/Pods-ARKitExample-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		492CD9ED5BF8DD6549B6EFE7 /* [CP] Check Pods Manifest.lock */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
-				"${PODS_ROOT}/Manifest.lock",
-			);
-			name = "[CP] Check Pods Manifest.lock";
-			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-ARKitExample-checkManifestLockResult.txt",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
-			showEnvVarsInLog = 0;
-		};
-		796868622397D42BF0081059 /* [CP] Copy Pods Resources */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			name = "[CP] Copy Pods Resources";
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-ARKitExample/Pods-ARKitExample-resources.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		3929C4841E89EC2C00E00B60 /* Sources */ = {
