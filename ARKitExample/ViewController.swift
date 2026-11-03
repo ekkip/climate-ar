@@ -12,7 +12,7 @@ import UIKit
 import Photos
 //import StyledString
 
-class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UIPopoverPresentationControllerDelegate, /*VirtualObjectSelectionViewControllerDelegate,*/ UIScrollViewDelegate {
+class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UIPopoverPresentationControllerDelegate, /*VirtualObjectSelectionViewControllerDelegate,*/ UIScrollViewDelegate, UITextViewDelegate {
 	
 	let globe = Globe()
 	
@@ -63,12 +63,17 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 		// Prevent the screen from being dimmed after a while.
 		UIApplication.shared.isIdleTimerDisabled = true
 		
-		// Start the ARSession.
-		restartPlaneDetection()
+		if AppRuntime.usesNonARPreview {
+			startNonARPreview()
+		} else {
+			restartPlaneDetection()
+		}
 		
 		setShowIntroductionOnStartupButton()
 		if UserDefaults.standard.bool(for: .showIntroductionOnStartup) {
-			presentIntroduction()
+			DispatchQueue.main.async {
+				self.presentIntroduction()
+			}
 		}
 
 	}
@@ -78,7 +83,9 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 		#if DEBUG
 		MainThreadHitchMonitor.shared.stop()
 		#endif
-		session.pause()
+		if !AppRuntime.usesNonARPreview {
+			session.pause()
+		}
 	}
 
 	override func updateViewConstraints() {
@@ -101,6 +108,9 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 		super.viewDidLayoutSubviews()
 		updateGlobeTimeSliderLayout(preserveYear: true)
 		updatePlacementRaycastScreenCenterIfNeeded()
+		if AppRuntime.usesNonARPreview {
+			tryNonARPreviewPlacementIfReady()
+		}
 		if introductionScrollView != nil {
 			updateIntroductionScrollLayout()
 		}
@@ -112,6 +122,7 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 	var sessionConfig: ARConfiguration = ARWorldTrackingConfiguration()
 	var use3DOFTracking = false {
 		didSet {
+			guard !AppRuntime.usesNonARPreview else { return }
 			if use3DOFTracking {
 				sessionConfig = AROrientationTrackingConfiguration()
 			}
@@ -126,14 +137,17 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
     
     func setupScene() {
 		
-		session.delegate = self
-		
         // set up sceneView
         sceneView.delegate = self
-        sceneView.session = session
+		if AppRuntime.usesNonARPreview {
+			configureNonARPreviewSceneIfNeeded()
+		} else {
+			session.delegate = self
+			sceneView.session = session
+			sceneView.autoenablesDefaultLighting = false
+		}
 		sceneView.insetsLayoutMarginsFromSafeArea = false
 		sceneView.antialiasingMode = .multisampling4X
-		sceneView.autoenablesDefaultLighting = false
 		sceneView.automaticallyUpdatesLighting = false
 		
 		sceneView.preferredFramesPerSecond = 60
@@ -144,19 +158,27 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 		debugPrint("view.frame: \(view.frame)")
 		debugPrint("sceneView.frame: \(sceneView.frame)")
 
-		enableEnvironmentMapWithIntensity(25.0)
+		if AppRuntime.usesNonARPreview {
+			applyNonARPreviewLighting()
+		} else {
+			enableEnvironmentMapWithIntensity(25.0)
+		}
 		
 		DispatchQueue.main.async {
 			self.updatePlacementRaycastScreenCenterIfNeeded()
 		}
 		
-		if let camera = sceneView.pointOfView?.camera {
+		if !AppRuntime.usesNonARPreview, let camera = sceneView.pointOfView?.camera {
 			camera.wantsHDR = true
 			camera.wantsExposureAdaptation = true
 			camera.exposureOffset = -1
 			camera.minimumExposure = -1
 		}
     }
+
+	func markEnvironmentIntensityApplied(_ intensity: CGFloat) {
+		appliedEnvironmentIntensity = intensity
+	}
 	
 	func enableEnvironmentMapWithIntensity(_ intensity: CGFloat) {
 //		debugPrint("\(#function) – overwriting existing intensity \(sceneView.scene.lightingEnvironment.intensity) with \(intensity)")
@@ -218,6 +240,10 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 	private var appliedEnvironmentIntensity: CGFloat = -1
 	
 	func renderer(_ renderer: SCNSceneRenderer, updateAtTime time: TimeInterval) {
+		if AppRuntime.usesNonARPreview {
+			return
+		}
+
 		refreshFeaturePoints()
 		
 		// Queue main-thread work only when something changed; a block per frame keeps the main thread in lockstep with the renderer.
@@ -696,6 +722,13 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
     }
 	
 	private func finishVirtualObjectLoadUI(placeObject: Bool) {
+		isLoadingObject = false
+
+		if AppRuntime.usesNonARPreview {
+			autoPlaceGlobeForNonARPreview()
+			return
+		}
+
 		if let lastFocusSquarePos = focusSquare?.lastPosition, placeObject {
 			setNewVirtualObjectPosition(lastFocusSquarePos)
 		} else if !globe.globePrismsLoaded {
@@ -703,7 +736,6 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 		}
 		
 		textManager.showMessage("TAP TO PLACE", autoHide: false)
-		isLoadingObject = false
 		globeState = .loaded
 		setupFocusSquare()
 	}
@@ -753,7 +785,9 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 		updateGlobeTimeSliderLayout(preserveYear: preserveScrollYear)
 		
 		if globe.globePrismsLoaded {
-			if globeState == .loading {
+			if AppRuntime.usesNonARPreview {
+				tryNonARPreviewPlacementIfReady()
+			} else if globeState == .loading {
 				globeState = .loaded
 			}
 			return
@@ -777,16 +811,21 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 		} else {
 			self.setNewVirtualObjectPosition(SCNVector3Zero)
 		}
+		finalizeGlobePlacementUI()
+	}
+
+	func finalizeGlobePlacementUI() {
 		globeState = .placed
 		textManager.showHideMessage(hide: true, animated: true)
-		stopPlaneDetection()
+		if !AppRuntime.usesNonARPreview {
+			stopPlaneDetection()
+		}
 
-        setThermometer()
-        
+		setThermometer()
+
 		UIView.animate(withDuration: 0.5, animations: {
 			self.globeControlPanel.alpha = 1
 			self.timeSliderTouchRegion.alpha = 1
-//            self.thermometerContainer.alpha = 1
 		}) { (_) in
 			self.globeControlPanel.isUserInteractionEnabled = true
 			self.timeScrollView.isUserInteractionEnabled = true
@@ -883,43 +922,6 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 //	// from 2021
 //	let thermometerThreshold2DegVisibleFromYear = 270
 //
-//	var climatePolicySimulationVisibility = false
-//	// from 2018
-//	let climatePolicySimulationVisibleFromYear = 267
-	
-	var panelVisibility = [10: false, 20: false, 30: false, 40: false, 50: false]
-	var panelVisibleFromYear = [10: 267, 20: 134, 30: 260, 40: 270, 50: 134]
-	var panelVisibleToYear = [10: 350, 20: 257, 30: 350, 40: 350, 50: 350]
-	
-	func setPanelVisibilities() {
-		setPanelVisibility(panel: thermometerPanel)
-		setPanelVisibility(panel: climatePolicySimulationPanel)
-		setPanelVisibility(panel: thermometerCO2CounterPanel)
-		setPanelVisibility(panel: thermometerThreshold1DegPanel)
-		setPanelVisibility(panel: thermometerThreshold2DegPanel)
-	}
-	
-	
-	func setPanelVisibility(panel: UIView) {
-		guard
-			let visibility = panelVisibility[panel.tag],
-			let visibleFromYear = panelVisibleFromYear[panel.tag],
-			let visibleToYear = panelVisibleToYear[panel.tag]
-		else { return }
-		
-		let visible = visibleFromYear < currentYear && currentYear < visibleToYear
-		if visible == visibility { return }
-		panelVisibility[panel.tag] = visible
-		
-		panel.isHidden = false
-		UIView.animate(withDuration: 0.5,
-					   delay: 0,
-					   options: .beginFromCurrentState,
-					   animations: { panel.alpha = visible ? 1 : 0 }) { (_) in
-						if !visible { panel.isHidden = true }
-		}
-	}
-	
 	func setGlobe() {
 		debugPrint("Setting globe to year \(currentYear)")
 		globe.setYear(currentYear)
@@ -1153,8 +1155,12 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 			debugPrint("FLAG 3")
 			self.resetVirtualObject()
 
-			self.setupFocusSquare()
-			self.restartPlaneDetection()
+			if AppRuntime.usesNonARPreview {
+				self.startNonARPreview()
+			} else {
+				self.setupFocusSquare()
+				self.restartPlaneDetection()
+			}
 			
 //			self.restartExperienceButton.setImage(#imageLiteral(resourceName: "restart"), for: [])
 			
@@ -1166,7 +1172,8 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 	}
 	
     // MARK: - Thermometer
-    
+
+	var yearRangePanelStates = [YearRangePanelState]()
 	var thermometerPanel: UIView!
 	var thermometerContainer: UIView!
 	var thermometerMercury: UIImageView!
@@ -1396,9 +1403,10 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 
 	func presentIntroduction() {
 
-		activeOverlay = .intro
-
 		prepareIntroductionPanelForLayout()
+		view.insertSubview(introductionPanel, aboveSubview: overlayBackground)
+
+		activeOverlay = .intro
 
 		lastIntroductionPageWidth = 0
 		introductionScrollView.contentOffset.x = 0
@@ -1415,6 +1423,11 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 	}
 
 	func dismissIntroduction() {
+		let wasIntroOverlay = activeOverlay == .intro
+		if wasIntroOverlay {
+			activeOverlay = .none
+		}
+
 		guard introductionPanel.superview != nil, introductionPanelCenterYConstraint != nil else {
 			introductionPanel.alpha = 0
 			visibleMenuButton.alpha = 1
@@ -1481,6 +1494,18 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 			]
 		)
 	}
+
+	private func creditsProjectWebsiteLink() -> NSAttributedString {
+		let text = "uclab.fh-potsdam.de/projects/co2"
+		let url = URL(string: "https://uclab.fh-potsdam.de/projects/co2")!
+		let link = NSMutableAttributedString(attributedString: styled(text, .medium, 15))
+		link.addAttribute(.link, value: url, range: NSRange(location: 0, length: text.count))
+		return link
+	}
+
+	func textView(_ textView: UITextView, shouldInteractWith URL: URL, in characterRange: NSRange, interaction: UITextItemInteraction) -> Bool {
+		return textView === creditsTextView
+	}
 	
 	func setupCredits() {
 		
@@ -1495,7 +1520,7 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 			styled("Scientific Lead\n", .light, 15) +
 			styled("Elmar Kriegler (PIK)\n\n", .medium, 15) +
             styled("Project Website\n", .light, 15) +
-            styled("uclab.fh-potsdam.de/projects/co2", .medium, 15)
+			creditsProjectWebsiteLink()
 //            styled("SOURCES\n\n", .light, 18) +
 //            styled("CO2 Emissions from Fossil Fuel Burning and Cement Manufacture 1751-2013\n", .medium, 13) +
 //            styled("Carbon Dioxide Information Analysis Center (CDIAC), CO2 Emissions from Fossil-Fuel Burning and Cement Manufacture 1751-2013, DOI: 10.3334/CDIAC/ffe.ndp058.2016\n\n", .light, 13) +

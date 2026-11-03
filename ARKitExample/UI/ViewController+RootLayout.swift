@@ -31,6 +31,7 @@ extension ViewController {
 		buildOverlayBackground()
 		buildMenuChrome()
 		buildClimatePolicyPanel()
+		registerYearRangePanels()
 	}
 
 	private func buildMessagePanel() {
@@ -221,7 +222,6 @@ extension ViewController {
 		thermometerPanel = UIView()
 		thermometerPanel.clipsToBounds = true
 		thermometerPanel.alpha = 0
-		thermometerPanel.tag = 50
 		thermometerPanel.isUserInteractionEnabled = false
 		thermometerPanel.backgroundColor = .clear
 		thermometerPanel.layer.cornerRadius = 6
@@ -261,9 +261,9 @@ extension ViewController {
 			thermometerContainer.heightAnchor.constraint(equalToConstant: StyleParams.thermometerContainerHeight),
 		])
 
-		thermometerThreshold2DegPanel = makeSidePanel(tag: 40, size: StyleParams.threshold2PanelSize)
-		thermometerThreshold1DegPanel = makeSidePanel(tag: 30, size: StyleParams.threshold1PanelSize)
-		thermometerCO2CounterPanel = makeSidePanel(tag: 20, size: StyleParams.co2PanelSize)
+		thermometerThreshold2DegPanel = makeSidePanel(size: StyleParams.threshold2PanelSize)
+		thermometerThreshold1DegPanel = makeSidePanel(size: StyleParams.threshold1PanelSize)
+		thermometerCO2CounterPanel = makeSidePanel(size: StyleParams.co2PanelSize)
 
 		view.addSubview(thermometerThreshold2DegPanel)
 		view.addSubview(thermometerThreshold1DegPanel)
@@ -284,9 +284,8 @@ extension ViewController {
 		])
 	}
 
-	private func makeSidePanel(tag: Int, size: CGSize) -> UIView {
+	private func makeSidePanel(size: CGSize) -> UIView {
 		let panel = UIView()
-		panel.tag = tag
 		panel.alpha = 0
 		panel.isHidden = true
 		panel.isUserInteractionEnabled = false
@@ -426,7 +425,6 @@ extension ViewController {
 	
 	private func buildClimatePolicyPanel() {
 		climatePolicySimulationPanel = UIView()
-		climatePolicySimulationPanel.tag = 10
 		climatePolicySimulationPanel.alpha = 0
 		climatePolicySimulationPanel.isHidden = true
 		climatePolicySimulationPanel.backgroundColor = .clear

@@ -484,11 +484,16 @@ enum LiveGlobeUpdates {
 	/// Launch argument `-LiveGlobeUpdates YES` / `NO` overrides the device check (e.g. in the scheme's Run arguments).
 	private static let overrideKey = "LiveGlobeUpdates"
 	
-	/// A12 (Metal GPU family Apple 5) or newer. Scrubbing only updates two shader uniforms per scroll step,
-	/// so the limit is rendering the AR globe at all rather than scrubbing.
+	/// A12+ on device (Metal GPU family Apple 5+). iOS Simulator on Apple Silicon Mac (M1+) is also eligible.
+	/// Scrubbing only updates two shader uniforms per scroll step; the limit is rendering the AR globe, not scrubbing.
 	static let isCapableHardware: Bool = {
 		guard let device = MTLCreateSystemDefaultDevice() else { return false }
-		return device.supportsFamily(.apple5)
+		if device.supportsFamily(.apple5) { return true }
+		#if targetEnvironment(simulator) && arch(arm64)
+		return true
+		#else
+		return false
+		#endif
 	}()
 	
 	/// Re-evaluated per scroll step, so the app falls back to after-scroll updates under Low Power Mode or heat.

@@ -13,6 +13,7 @@ extension ViewController {
 		buildRootLayout()
 		buildMenuView()
 		buildIntroductionPanel()
+		setupIntroduction()
 		buildCreditsPanel()
 	}
 }

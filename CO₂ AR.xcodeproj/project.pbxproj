@@ -49,12 +49,15 @@
 		E1A100122E89EC2C00E00B70 /* MenuChromeLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A100132E89EC2C00E00B71 /* MenuChromeLayout.swift */; };
 		E1A100152E89EC2C00E00B73 /* ViewController+GlobeTimeSlider.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A100142E89EC2C00E00B72 /* ViewController+GlobeTimeSlider.swift */; };
 		E1A100172E89EC2C00E00B75 /* TimeSliderTouchRegionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A100162E89EC2C00E00B74 /* TimeSliderTouchRegionView.swift */; };
+		E1A100182E89EC2C00E00B76 /* AppRuntime.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A1001A2E89EC2C00E00B78 /* AppRuntime.swift */; };
+		E1A100192E89EC2C00E00B77 /* ViewController+NonARPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A1001B2E89EC2C00E00B79 /* ViewController+NonARPreview.swift */; };
+		E1A1001C2E89EC2C00E00B7A /* YearRangePanelVisibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A1001D2E89EC2C00E00B7B /* YearRangePanelVisibility.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		11063F3B1EBE651B0033EE6D /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		16DA3C59CAE7D97A9FDD9FA0 /* SampleCode.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = SampleCode.xcconfig; path = Configuration/SampleCode.xcconfig; sourceTree = "<group>"; };
-		3929C4881E89EC2C00E00B60 /* ARKitExample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ARKitExample.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		3929C4881E89EC2C00E00B60 /* Emissions.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Emissions.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3929C48B1E89EC2C00E00B60 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		3929C48D1E89EC2C00E00B60 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
 		3929C4921E89EC2C00E00B60 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -101,6 +104,9 @@
 		E1A100132E89EC2C00E00B71 /* MenuChromeLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuChromeLayout.swift; sourceTree = "<group>"; };
 		E1A100142E89EC2C00E00B72 /* ViewController+GlobeTimeSlider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ViewController+GlobeTimeSlider.swift"; sourceTree = "<group>"; };
 		E1A100162E89EC2C00E00B74 /* TimeSliderTouchRegionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeSliderTouchRegionView.swift; sourceTree = "<group>"; };
+		E1A1001A2E89EC2C00E00B78 /* AppRuntime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRuntime.swift; sourceTree = "<group>"; };
+		E1A1001B2E89EC2C00E00B79 /* ViewController+NonARPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ViewController+NonARPreview.swift"; sourceTree = "<group>"; };
+		E1A1001D2E89EC2C00E00B7B /* YearRangePanelVisibility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YearRangePanelVisibility.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -140,7 +146,7 @@
 		3929C4891E89EC2C00E00B60 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				3929C4881E89EC2C00E00B60 /* ARKitExample.app */,
+				3929C4881E89EC2C00E00B60 /* Emissions.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -150,6 +156,7 @@
 			children = (
 				3929C48B1E89EC2C00E00B60 /* AppDelegate.swift */,
 				A1B2C3D41E89EC2C00E00B61 /* SceneDelegate.swift */,
+				E1A1001A2E89EC2C00E00B78 /* AppRuntime.swift */,
 				3929C48D1E89EC2C00E00B60 /* ViewController.swift */,
 				C40DF57B1EC2330700D9D59E /* Virtual Objects */,
 				E1A100052E89EC2C00E00B63 /* UI */,
@@ -236,7 +243,9 @@
 				E1A1000F2E89EC2C00E00B6D /* ViewController+CreditsLayout.swift */,
 				E1A100132E89EC2C00E00B71 /* MenuChromeLayout.swift */,
 				E1A100142E89EC2C00E00B72 /* ViewController+GlobeTimeSlider.swift */,
+				E1A1001D2E89EC2C00E00B7B /* YearRangePanelVisibility.swift */,
 				E1A100162E89EC2C00E00B74 /* TimeSliderTouchRegionView.swift */,
+				E1A1001B2E89EC2C00E00B79 /* ViewController+NonARPreview.swift */,
 			);
 			path = UI;
 			sourceTree = "<group>";
@@ -244,9 +253,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		3929C4871E89EC2C00E00B60 /* ARKitExample */ = {
+		3929C4871E89EC2C00E00B60 /* CO₂ AR */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 3929C49A1E89EC2C00E00B60 /* Build configuration list for PBXNativeTarget "ARKitExample" */;
+			buildConfigurationList = 3929C49A1E89EC2C00E00B60 /* Build configuration list for PBXNativeTarget "CO₂ AR" */;
 			buildPhases = (
 				3929C4841E89EC2C00E00B60 /* Sources */,
 				3929C4851E89EC2C00E00B60 /* Frameworks */,
@@ -256,9 +265,9 @@
 			);
 			dependencies = (
 			);
-			name = ARKitExample;
-			productName = ARKitExample;
-			productReference = 3929C4881E89EC2C00E00B60 /* ARKitExample.app */;
+			name = "CO₂ AR";
+			productName = "CO₂ Emissions";
+			productReference = 3929C4881E89EC2C00E00B60 /* Emissions.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -279,7 +288,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 3929C4831E89EC2C00E00B60 /* Build configuration list for PBXProject "ARKitExample" */;
+			buildConfigurationList = 3929C4831E89EC2C00E00B60 /* Build configuration list for PBXProject "CO₂ AR" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
@@ -293,7 +302,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				3929C4871E89EC2C00E00B60 /* ARKitExample */,
+				3929C4871E89EC2C00E00B60 /* CO₂ AR */,
 			);
 		};
 /* End PBXProject section */
@@ -351,6 +360,9 @@
 				E1A100122E89EC2C00E00B70 /* MenuChromeLayout.swift in Sources */,
 				E1A100152E89EC2C00E00B73 /* ViewController+GlobeTimeSlider.swift in Sources */,
 				E1A100172E89EC2C00E00B75 /* TimeSliderTouchRegionView.swift in Sources */,
+				E1A100182E89EC2C00E00B76 /* AppRuntime.swift in Sources */,
+				E1A100192E89EC2C00E00B77 /* ViewController+NonARPreview.swift in Sources */,
+				E1A1001C2E89EC2C00E00B7A /* YearRangePanelVisibility.swift in Sources */,
 				C4FBC02B1EC6438B003F7864 /* ARCameraTrackingState.swift in Sources */,
 				699946801F6D950000B5C7BD /* Globe.swift in Sources */,
 				699946821F6D950000B5C7BD /* MergedPrismLayer.swift in Sources */,
@@ -483,11 +495,13 @@
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = V9M3FX97AT;
 				INFOPLIST_FILE = ARKitExample/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Emissions;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = "de.programmator.Climate-Viz-AR";
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_MODULE_NAME = ARKitExample;
+				PRODUCT_NAME = Emissions;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_VERSION = 4.2;
 			};
@@ -503,11 +517,13 @@
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = V9M3FX97AT;
 				INFOPLIST_FILE = ARKitExample/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Emissions;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = "de.programmator.Climate-Viz-AR";
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_MODULE_NAME = ARKitExample;
+				PRODUCT_NAME = Emissions;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_VERSION = 4.2;
 			};
@@ -516,7 +532,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		3929C4831E89EC2C00E00B60 /* Build configuration list for PBXProject "ARKitExample" */ = {
+		3929C4831E89EC2C00E00B60 /* Build configuration list for PBXProject "CO₂ AR" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				3929C4981E89EC2C00E00B60 /* Debug */,
@@ -525,7 +541,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		3929C49A1E89EC2C00E00B60 /* Build configuration list for PBXNativeTarget "ARKitExample" */ = {
+		3929C49A1E89EC2C00E00B60 /* Build configuration list for PBXNativeTarget "CO₂ AR" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				3929C49B1E89EC2C00E00B60 /* Debug */,

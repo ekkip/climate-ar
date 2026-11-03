@@ -178,8 +178,14 @@ class SingleFingerGesture: Gesture {
 	}
 	
 	private func cameraDistanceToGlobe() -> Float {
-		guard let frame = sceneView.session.currentFrame else { return GlobeYDragParams.referenceCameraDistance }
-		let cameraPos = SCNVector3.positionFromTransform(frame.camera.transform)
+		let cameraPos: SCNVector3
+		if let frame = sceneView.session.currentFrame {
+			cameraPos = SCNVector3.positionFromTransform(frame.camera.transform)
+		} else if let pointOfView = sceneView.pointOfView {
+			cameraPos = pointOfView.worldPosition
+		} else {
+			return GlobeYDragParams.referenceCameraDistance
+		}
 		return (cameraPos - virtualObject.position).length()
 	}
 	

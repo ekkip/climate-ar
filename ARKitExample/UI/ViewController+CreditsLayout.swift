@@ -24,6 +24,7 @@ extension ViewController {
 		titleLabel.text = "CREDITS"
 		titleLabel.font = UIFont.rubik(.light, size: 29)
 		titleLabel.textColor = .white
+		titleLabel.isUserInteractionEnabled = false
 		titleLabel.translatesAutoresizingMaskIntoConstraints = false
 		creditsPanel.addSubview(titleLabel)
 
@@ -36,11 +37,11 @@ extension ViewController {
 		creditsTextView.backgroundColor = .clear
 		creditsTextView.textColor = .white
 		creditsTextView.font = UIFont.rubik(.light, size: 15)
-		creditsTextView.isEditable = false
+		creditsTextView.configureAsNonSelectableOverlayText()
+		creditsTextView.delegate = self
 		creditsTextView.showsHorizontalScrollIndicator = false
 		creditsTextView.showsVerticalScrollIndicator = false
 		creditsTextView.indicatorStyle = .white
-		creditsTextView.dataDetectorTypes = [.link]
 		creditsTextView.translatesAutoresizingMaskIntoConstraints = false
 		textContainer.addSubview(creditsTextView)
 

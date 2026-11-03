@@ -120,6 +120,7 @@ In order to stop global warming, humankind needs to stop emitting CO₂ and redu
 		titleLabel.text = title
 		titleLabel.font = UIFont.rubik(.light, size: 29)
 		titleLabel.textColor = .white
+		titleLabel.isUserInteractionEnabled = false
 		titleLabel.translatesAutoresizingMaskIntoConstraints = false
 		page.addSubview(titleLabel)
 
@@ -128,7 +129,7 @@ In order to stop global warming, humankind needs to stop emitting CO₂ and redu
 		bodyView.textColor = .white
 		bodyView.font = UIFont.rubik(.regular, size: 15)
 		bodyView.text = body
-		bodyView.isEditable = false
+		bodyView.configureAsNonSelectableOverlayText()
 		bodyView.isScrollEnabled = true
 		bodyView.textContainerInset = .zero
 		bodyView.textContainer.lineFragmentPadding = 0
@@ -173,7 +174,7 @@ In order to stop global warming, humankind needs to stop emitting CO₂ and redu
 			startupHint.textColor = .white
 			startupHint.font = UIFont.rubik(.regular, size: 11)
 			startupHint.text = "Show introduction every time I open the app"
-			startupHint.isEditable = false
+			startupHint.configureAsNonSelectableOverlayText()
 			startupHint.isScrollEnabled = false
 			startupHint.isUserInteractionEnabled = false
 			startupHint.translatesAutoresizingMaskIntoConstraints = false
