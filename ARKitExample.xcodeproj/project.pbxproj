@@ -154,6 +154,7 @@
 			children = (
 				3929C48B1E89EC2C00E00B60 /* AppDelegate.swift */,
 				A1B2C3D41E89EC2C00E00B61 /* SceneDelegate.swift */,
+				E1A1001A2E89EC2C00E00B78 /* AppRuntime.swift */,
 				3929C48D1E89EC2C00E00B60 /* ViewController.swift */,
 				C40DF57B1EC2330700D9D59E /* Virtual Objects */,
 				E1A100052E89EC2C00E00B63 /* UI */,
@@ -164,7 +165,6 @@
 				C4FBC02A1EC6438B003F7864 /* ARCameraTrackingState.swift */,
 				39C0B9581E9C6B1F003FCA0C /* Utilities.swift */,
 				695DD3072140279E00BFB806 /* Constants.swift */,
-				E1A1001A2E89EC2C00E00B78 /* AppRuntime.swift */,
 				695DD30A2140279E00BFB807 /* ClimatePolicyPerf.swift */,
 				69A3BAA01FA8E80D009313AB /* Extensions.swift */,
 				6965F7FC1FA8E3D800B6EBEA /* Data */,

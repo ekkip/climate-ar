@@ -144,12 +144,10 @@ class ViewController: UIViewController, ARSessionDelegate, ARSCNViewDelegate, UI
 		} else {
 			session.delegate = self
 			sceneView.session = session
+			sceneView.autoenablesDefaultLighting = false
 		}
 		sceneView.insetsLayoutMarginsFromSafeArea = false
 		sceneView.antialiasingMode = .multisampling4X
-		if !AppRuntime.usesNonARPreview {
-			sceneView.autoenablesDefaultLighting = false
-		}
 		sceneView.automaticallyUpdatesLighting = false
 		
 		sceneView.preferredFramesPerSecond = 60

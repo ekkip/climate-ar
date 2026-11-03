@@ -89,9 +89,9 @@ final class MergedPrismLayer {
 	}
 	
 	static let animationDuration: CFTimeInterval = 0.5
-	/// One texture row per cell; split across multiple textures when cell count exceeds this (8192 on Simulator).
+	/// One texture row per cell; split when cell count exceeds this (8192 in non-AR preview environments).
 	private static func maxTextureRows(for device: MTLDevice) -> Int {
-		if AppRuntime.isRunningOnSimulator {
+		if AppRuntime.usesNonARPreview {
 			return 8192
 		}
 		return 16_384

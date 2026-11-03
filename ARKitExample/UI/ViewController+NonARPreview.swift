@@ -2,11 +2,29 @@
 See LICENSE folder for this sample's licensing information.
 
 Abstract:
-SceneKit-only preview on the iOS Simulator (no ARSession).
+SceneKit-only preview without ARSession (Simulator and iOS app on Mac).
 */
 
 import SceneKit
 import UIKit
+
+enum NonARPreview {
+	/// Matches standing eye height; ground is at y = 0 for scale math.
+	static let cameraHeightAboveGround: Float = 1.5
+	static let globeDistanceFromCamera: Float = 2.0
+	/// Same factor as `setNewVirtualObjectPosition` (`deltaHeight * 0.75`).
+	static let globeScaleHeightFactor: Float = 0.75
+
+	static let sceneBackgroundColor = UIColor(red: 0.04, green: 0.10, blue: 0.22, alpha: 1.0)
+
+	// Use Sanssouci on-site background image for App Store imagery
+	// (Dark blue background colour if usesBGImage set to false)
+	static let usesBGImage = false
+	static let backgroundImageName = "Sanssouci nur BG"
+
+	static let lightingEnvironmentIntensity: CGFloat = 5
+	static let directionalLightIntensity: CGFloat = 320
+}
 
 extension ViewController {
 
@@ -16,24 +34,28 @@ extension ViewController {
 	}
 
 	func configureNonARPreviewSceneIfNeeded() {
-		guard AppRuntime.usesNonARPreview else { return }
-
 		if sceneView.scene == nil {
 			sceneView.scene = SCNScene()
 		}
 
-		sceneView.scene.background.contents = NonARPreview.sceneBackgroundColor
-		sceneView.backgroundColor = NonARPreview.sceneBackgroundColor
+		applyNonARPreviewBackground()
 		sceneView.isPlaying = true
 		sceneView.rendersContinuously = true
 		ensureNonARPreviewCamera()
 		applyNonARPreviewLighting()
 	}
 
-	func applyNonARPreviewLighting() {
-		guard AppRuntime.usesNonARPreview else { return }
+	func applyNonARPreviewBackground() {
+		if NonARPreview.usesBGImage, let image = UIImage(named: NonARPreview.backgroundImageName) {
+			sceneView.scene.background.contents = image
+			sceneView.backgroundColor = NonARPreview.sceneBackgroundColor
+		} else {
+			sceneView.scene.background.contents = NonARPreview.sceneBackgroundColor
+			sceneView.backgroundColor = NonARPreview.sceneBackgroundColor
+		}
+	}
 
-		// Default SceneKit lighting stacks with the IBL and reads brighter than on device AR.
+	func applyNonARPreviewLighting() {
 		sceneView.autoenablesDefaultLighting = false
 		sceneView.rendersContinuously = true
 		enableEnvironmentMapWithIntensity(NonARPreview.lightingEnvironmentIntensity)
@@ -44,10 +66,7 @@ extension ViewController {
 		}
 	}
 
-	/// ARSCNView does not install a rendering camera until an AR session runs; create one for SceneKit-only preview.
 	func ensureNonARPreviewCamera() {
-		guard AppRuntime.usesNonARPreview else { return }
-
 		let scene = sceneView.scene ?? SCNScene()
 		if sceneView.scene == nil {
 			sceneView.scene = scene
@@ -92,20 +111,17 @@ extension ViewController {
 	}
 
 	func startNonARPreview() {
-		guard AppRuntime.usesNonARPreview else { return }
-
 		configureNonARPreviewSceneIfNeeded()
 		textManager.cancelAllScheduledMessages()
 		tryNonARPreviewPlacementIfReady()
 	}
 
 	func tryNonARPreviewPlacementIfReady() {
-		guard AppRuntime.usesNonARPreview, globeState != .placed else { return }
+		guard globeState != .placed else { return }
 		guard globe.modelLoaded else { return }
 		autoPlaceGlobeForNonARPreview()
 	}
 
-	/// Globe on the floor, 2 m in front of the world origin (same scale rule as AR at 1.5 m eye height).
 	private func nonARPreviewGlobePositionOnFloor() -> SCNVector3 {
 		SCNVector3(0, 0, -NonARPreview.globeDistanceFromCamera)
 	}
@@ -123,7 +139,6 @@ extension ViewController {
 		return core.convertPosition(localCenter, to: nil)
 	}
 
-	/// Fixed eye position; rotate only to center the globe mesh in the view.
 	private func frameNonARPreviewCameraOnGlobe() {
 		guard let camera = sceneView.pointOfView else { return }
 		resetNonARPreviewCameraPose()
@@ -135,7 +150,7 @@ extension ViewController {
 	}
 
 	func autoPlaceGlobeForNonARPreview() {
-		guard AppRuntime.usesNonARPreview, globeState != .placed else { return }
+		guard globeState != .placed else { return }
 		guard globe.modelLoaded else { return }
 
 		ensureNonARPreviewCamera()
