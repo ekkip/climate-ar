@@ -89,8 +89,13 @@ final class MergedPrismLayer {
 	}
 	
 	static let animationDuration: CFTimeInterval = 0.5
-	/// Largest 2D texture size on every Metal GPU family; one texture row per cell.
-	private static let maxTextureSize = 16_384
+	/// One texture row per cell; split across multiple textures when cell count exceeds this (8192 on Simulator).
+	private static func maxTextureRows(for device: MTLDevice) -> Int {
+		if AppRuntime.isRunningOnSimulator {
+			return 8192
+		}
+		return 16_384
+	}
 	/// Hidden prisms collapse onto their base, pulled this far inside the globe surface.
 	private static let hiddenRadiusFactor: Float = 0.98
 	private static let animationKey = "prismState"
@@ -101,6 +106,8 @@ final class MergedPrismLayer {
 	private static let shaderModifier = """
 	#pragma arguments
 	texture2d<float> prismValues;
+	texture2d<float> prismValues1;
+	float prismCellSplit;
 	float prismYear;
 	float prismPolicy;
 	float prismLastYear;
@@ -109,6 +116,12 @@ final class MergedPrismLayer {
 	float prismHiddenScale;
 	#pragma body
 	uint cell = uint(_geometry.texcoords[0].x + 0.5);
+	thread texture2d<float> values = prismValues;
+	uint row = cell;
+	if (cell >= uint(prismCellSplit)) {
+		row = cell - uint(prismCellSplit);
+		values = prismValues1;
+	}
 	float year = clamp(prismYear, 0.0, prismLastYear);
 	uint y0 = uint(year);
 	uint y1 = min(y0 + 1, uint(prismLastYear));
@@ -117,8 +130,8 @@ final class MergedPrismLayer {
 	uint policyStart = uint(prismPolicyStart);
 	uint p0 = y0 < policyStart ? y0 : baseColumns + y0 - policyStart;
 	uint p1 = y1 < policyStart ? y1 : baseColumns + y1 - policyStart;
-	float baseValue = mix(prismValues.read(uint2(y0, cell)).r, prismValues.read(uint2(y1, cell)).r, f);
-	float policyValue = mix(prismValues.read(uint2(p0, cell)).r, prismValues.read(uint2(p1, cell)).r, f);
+	float baseValue = mix(values.read(uint2(y0, row)).r, values.read(uint2(y1, row)).r, f);
+	float policyValue = mix(values.read(uint2(p0, row)).r, values.read(uint2(p1, row)).r, f);
 	float value = mix(baseValue, policyValue, prismPolicy);
 	if (value > prismThreshold) {
 		_geometry.position.xyz += value * _geometry.color.rgb;
@@ -146,13 +159,14 @@ final class MergedPrismLayer {
 	
 	/// Builds mesh and value texture synchronously (tens of ms in Release); call off the main thread.
 	init?(cells: Cells, shape: Shape, templateGeometry: SCNGeometry) {
-		guard cells.count > 0, cells.count <= MergedPrismLayer.maxTextureSize,
+		guard cells.count > 0,
 			let template = MergedPrismLayer.makeTemplate(from: templateGeometry),
 			let templateMaterial = templateGeometry.firstMaterial,
 			let material = templateMaterial.copy() as? SCNMaterial,
 			let device = MTLCreateSystemDefaultDevice() else {
 			return nil
 		}
+		let maxRows = MergedPrismLayer.maxTextureRows(for: device)
 		#if DEBUG
 		let signpost = GlobePerf.beginMergedBuild(year: 0, policy: false)
 		let buildStart = Date()
@@ -160,13 +174,17 @@ final class MergedPrismLayer {
 		
 		let lastYear = max(0, ((0..<cells.count).map { cells.yearCount(cell: $0) }.max() ?? 1) - 1)
 		let policyStart = (0..<cells.count).map { cells.policyOffset(cell: $0) }.min().map { min($0, lastYear + 1) } ?? lastYear + 1
-		guard let values = MergedPrismLayer.makeValueTexture(cells: cells, lastYear: lastYear, policyStart: policyStart, device: device) else {
+		guard let values = MergedPrismLayer.makeValueTextures(
+			cells: cells, lastYear: lastYear, policyStart: policyStart, maxRowsPerTexture: maxRows, device: device
+		) else {
 			return nil
 		}
 		let geometry = MergedPrismLayer.makeGeometry(cells: cells, shape: shape, template: template, maxValues: values.maxValues)
 		
 		material.shaderModifiers = [.geometry: MergedPrismLayer.shaderModifier]
-		material.setValue(SCNMaterialProperty(contents: values.texture), forKey: "prismValues")
+		material.setValue(SCNMaterialProperty(contents: values.textures[0]), forKey: "prismValues")
+		material.setValue(SCNMaterialProperty(contents: values.textures[1]), forKey: "prismValues1")
+		material.setValue(Double(values.rowSplit), forKey: "prismCellSplit")
 		material.setValue(Double(lastYear), forKey: "prismLastYear")
 		material.setValue(Double(policyStart), forKey: "prismPolicyStart")
 		material.setValue(Double(shape.threshold), forKey: "prismThreshold")
@@ -254,38 +272,78 @@ final class MergedPrismLayer {
 	/// Position (float3), growth per unit value (float3), normal (float3), cell index (float2).
 	private static let bytesPerVertex = 11 * MemoryLayout<Float>.size
 	
-	private static func makeValueTexture(cells: Cells, lastYear: Int, policyStart: Int, device: MTLDevice) -> (texture: MTLTexture, columns: Int, maxValues: [Float])? {
+	private struct ValueTextures {
+		let textures: [MTLTexture]
+		let columns: Int
+		let maxValues: [Float]
+		/// When using two textures, rows >= `rowSplit` live in `textures[1]`.
+		let rowSplit: Int
+	}
+
+	private static func makeValueTextures(
+		cells: Cells,
+		lastYear: Int,
+		policyStart: Int,
+		maxRowsPerTexture: Int,
+		device: MTLDevice
+	) -> ValueTextures? {
 		let baseColumns = lastYear + 1
 		let columns = baseColumns + (baseColumns - policyStart)
-		guard columns <= maxTextureSize else { return nil }
-		var values = [Float](repeating: 0, count: columns * cells.count)
+		guard columns <= maxRowsPerTexture, maxRowsPerTexture > 0 else { return nil }
+
+		let textureCount = (cells.count + maxRowsPerTexture - 1) / maxRowsPerTexture
+		guard textureCount <= 2 else { return nil }
+
 		var maxValues = [Float](repeating: 0, count: cells.count)
+		var flatValues = [Float](repeating: 0, count: columns * cells.count)
 		for i in 0..<cells.count {
 			let row = i * columns
 			var maxValue: Float = 0
 			for year in 0..<min(cells.yearCount(cell: i), baseColumns) {
 				let base = cells.value(cell: i, year: year, policy: false) ?? 0
-				values[row + year] = base
+				flatValues[row + year] = base
 				maxValue = max(maxValue, base)
 				if year >= policyStart {
 					let policy = cells.value(cell: i, year: year, policy: true) ?? 0
-					values[row + baseColumns + year - policyStart] = policy
+					flatValues[row + baseColumns + year - policyStart] = policy
 					maxValue = max(maxValue, policy)
 				}
 			}
 			maxValues[i] = maxValue
 		}
-		
-		let descriptor = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .r32Float, width: columns, height: cells.count, mipmapped: false)
-		descriptor.usage = .shaderRead
-		guard let texture = device.makeTexture(descriptor: descriptor) else { return nil }
-		values.withUnsafeBytes { raw in
-			texture.replace(
-				region: MTLRegionMake2D(0, 0, columns, cells.count), mipmapLevel: 0,
-				withBytes: raw.baseAddress!, bytesPerRow: columns * MemoryLayout<Float>.size
+
+		let rowSplit = textureCount == 1 ? cells.count : maxRowsPerTexture
+		var textures = [MTLTexture]()
+		var cellOffset = 0
+		while cellOffset < cells.count {
+			let rowCount = min(maxRowsPerTexture, cells.count - cellOffset)
+			let descriptor = MTLTextureDescriptor.texture2DDescriptor(
+				pixelFormat: .r32Float, width: columns, height: rowCount, mipmapped: false
 			)
+			descriptor.usage = .shaderRead
+			guard let texture = device.makeTexture(descriptor: descriptor) else { return nil }
+			let sliceStart = cellOffset * columns
+			let sliceCount = rowCount * columns
+			flatValues[sliceStart..<(sliceStart + sliceCount)].withUnsafeBytes { raw in
+				texture.replace(
+					region: MTLRegionMake2D(0, 0, columns, rowCount), mipmapLevel: 0,
+					withBytes: raw.baseAddress!, bytesPerRow: columns * MemoryLayout<Float>.size
+				)
+			}
+			textures.append(texture)
+			cellOffset += rowCount
 		}
-		return (texture, columns, maxValues)
+
+		while textures.count < 2 {
+			guard let placeholder = device.makeTexture(
+				descriptor: MTLTextureDescriptor.texture2DDescriptor(
+					pixelFormat: .r32Float, width: 1, height: 1, mipmapped: false
+				)
+			) else { return nil }
+			textures.append(placeholder)
+		}
+
+		return ValueTextures(textures: textures, columns: columns, maxValues: maxValues, rowSplit: rowSplit)
 	}
 	
 	private static func makeGeometry(cells: Cells, shape: Shape, template: Template, maxValues: [Float]) -> SCNGeometry {

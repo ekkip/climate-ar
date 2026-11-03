@@ -12,6 +12,13 @@ import SpriteKit
 
 class Tooltip: SCNNode {
 
+	/// SceneKit rasterizes `SKScene` contents to a Metal texture; stay within the common 8192px limit (simulator and many GPUs).
+	private static func sceneLayoutScale() -> CGFloat {
+		let rasterScale = max(UIScreen.main.nativeScale, 1)
+		let maxSceneDimensionPoints = CGFloat(8192) / rasterScale
+		return min(10_000, maxSceneDimensionPoints / 0.45)
+	}
+
 	var lon = 0
 	var lat = 0
 	
@@ -32,7 +39,7 @@ class Tooltip: SCNNode {
 		self.lat = lat
 		
 		let tooltipScale: CGFloat = 0.175 // Tooltip appearance
-		let sceneScale: CGFloat = 10_000
+		let sceneScale: CGFloat = Self.sceneLayoutScale()
 //		let scenePadding: CGFloat = 0.005 * sceneScale
 
 		descriptionLabel = SKLabelNode(text: description)

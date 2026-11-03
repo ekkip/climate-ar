@@ -7,6 +7,7 @@ Utility functions and type extensions used throughout the projects.
 
 import Foundation
 import ARKit
+import SceneKit
 
 // - MARK: UIImage extensions
 
@@ -455,6 +456,27 @@ func rayIntersectionWithHorizontalPlane(rayOrigin: SCNVector3, direction: SCNVec
 	
 	// Return the intersection point.
 	return rayOrigin + (direction * dist)
+}
+
+extension SCNView {
+
+	struct ScreenRay {
+		let origin: SCNVector3
+		let direction: SCNVector3
+	}
+
+	/// Ray from the active point of view through a screen point (works without an AR session).
+	func rayFromScreenPoint(_ point: CGPoint) -> ScreenRay? {
+		guard let pointOfView else { return nil }
+
+		let cameraPos = pointOfView.worldPosition
+		let screenPos = SCNVector3(x: Float(point.x), y: Float(point.y), z: 1.0)
+		let worldPoint = unprojectPoint(screenPos)
+		var direction = worldPoint - cameraPos
+		guard direction.length() > 0.0001 else { return nil }
+		direction.normalize()
+		return ScreenRay(origin: cameraPos, direction: direction)
+	}
 }
 
 extension ARSCNView {
