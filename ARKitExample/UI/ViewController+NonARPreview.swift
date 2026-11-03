@@ -17,9 +17,17 @@ enum NonARPreview {
 
 	static let sceneBackgroundColor = UIColor(red: 0.04, green: 0.10, blue: 0.22, alpha: 1.0)
 
-	// Use Sanssouci on-site background image for App Store imagery
-	// (Dark blue background colour if usesBGImage set to false)
-	static let usesBGImage = false
+	/// Sanssouci backdrop for simulator / Mac preview screenshots (Debug only).
+	static let usesBGImage: Bool = {
+		#if DEBUG
+		// This is turned on to have a bg image for making App Store preview imagery
+		// You may switch it off to see production state (blue background) during development
+		return true
+		#else
+		// CAUTION! NEVER CHANGE THIS
+		return false
+		#endif
+	}()
 	static let backgroundImageName = "Sanssouci nur BG"
 
 	static let lightingEnvironmentIntensity: CGFloat = 5
