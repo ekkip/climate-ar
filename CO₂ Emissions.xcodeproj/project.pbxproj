@@ -51,6 +51,7 @@
 		E1A100172E89EC2C00E00B75 /* TimeSliderTouchRegionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A100162E89EC2C00E00B74 /* TimeSliderTouchRegionView.swift */; };
 		E1A100182E89EC2C00E00B76 /* AppRuntime.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A1001A2E89EC2C00E00B78 /* AppRuntime.swift */; };
 		E1A100192E89EC2C00E00B77 /* ViewController+NonARPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A1001B2E89EC2C00E00B79 /* ViewController+NonARPreview.swift */; };
+		E1A1001C2E89EC2C00E00B7A /* YearRangePanelVisibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A1001D2E89EC2C00E00B7B /* YearRangePanelVisibility.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -105,6 +106,7 @@
 		E1A100162E89EC2C00E00B74 /* TimeSliderTouchRegionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeSliderTouchRegionView.swift; sourceTree = "<group>"; };
 		E1A1001A2E89EC2C00E00B78 /* AppRuntime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRuntime.swift; sourceTree = "<group>"; };
 		E1A1001B2E89EC2C00E00B79 /* ViewController+NonARPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ViewController+NonARPreview.swift"; sourceTree = "<group>"; };
+		E1A1001D2E89EC2C00E00B7B /* YearRangePanelVisibility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YearRangePanelVisibility.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -241,6 +243,7 @@
 				E1A1000F2E89EC2C00E00B6D /* ViewController+CreditsLayout.swift */,
 				E1A100132E89EC2C00E00B71 /* MenuChromeLayout.swift */,
 				E1A100142E89EC2C00E00B72 /* ViewController+GlobeTimeSlider.swift */,
+				E1A1001D2E89EC2C00E00B7B /* YearRangePanelVisibility.swift */,
 				E1A100162E89EC2C00E00B74 /* TimeSliderTouchRegionView.swift */,
 				E1A1001B2E89EC2C00E00B79 /* ViewController+NonARPreview.swift */,
 			);
@@ -285,7 +288,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 3929C4831E89EC2C00E00B60 /* Build configuration list for PBXProject "ARKitExample" */;
+			buildConfigurationList = 3929C4831E89EC2C00E00B60 /* Build configuration list for PBXProject "CO₂ Emissions" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
@@ -359,6 +362,7 @@
 				E1A100172E89EC2C00E00B75 /* TimeSliderTouchRegionView.swift in Sources */,
 				E1A100182E89EC2C00E00B76 /* AppRuntime.swift in Sources */,
 				E1A100192E89EC2C00E00B77 /* ViewController+NonARPreview.swift in Sources */,
+				E1A1001C2E89EC2C00E00B7A /* YearRangePanelVisibility.swift in Sources */,
 				C4FBC02B1EC6438B003F7864 /* ARCameraTrackingState.swift in Sources */,
 				699946801F6D950000B5C7BD /* Globe.swift in Sources */,
 				699946821F6D950000B5C7BD /* MergedPrismLayer.swift in Sources */,
@@ -524,7 +528,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		3929C4831E89EC2C00E00B60 /* Build configuration list for PBXProject "ARKitExample" */ = {
+		3929C4831E89EC2C00E00B60 /* Build configuration list for PBXProject "CO₂ Emissions" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				3929C4981E89EC2C00E00B60 /* Debug */,

@@ -145,3 +145,15 @@ func +(lhs: NSAttributedString, rhs: NSAttributedString) -> NSAttributedString {
 	result.append(rhs)
 	return result
 }
+
+extension UITextView {
+
+	/// Read-only overlay copy: no selection (Mac drag-to-scroll) while keeping vertical scroll if enabled.
+	func configureAsNonSelectableOverlayText() {
+		isEditable = false
+		isSelectable = false
+		if #available(iOS 11.0, *) {
+			textDragInteraction?.isEnabled = false
+		}
+	}
+}

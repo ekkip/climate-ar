@@ -19,7 +19,7 @@ enum NonARPreview {
 
 	// Use Sanssouci on-site background image for App Store imagery
 	// (Dark blue background colour if usesBGImage set to false)
-	static let usesBGImage = false
+	static let usesBGImage = true
 	static let backgroundImageName = "Sanssouci nur BG"
 
 	static let lightingEnvironmentIntensity: CGFloat = 5
