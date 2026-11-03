@@ -16,8 +16,8 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "3929C4871E89EC2C00E00B60"
-               BuildableName = "ARKitExample.app"
-               ReferencedContainer = "container:ARKitExample.xcodeproj">
+               BuildableName = "CO&#x2082; Emissions.app"
+               ReferencedContainer = "container:CO&#x2082; AR.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -45,8 +45,8 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "3929C4871E89EC2C00E00B60"
-            BuildableName = "ARKitExample.app"
-            ReferencedContainer = "container:ARKitExample.xcodeproj">
+               BuildableName = "CO&#x2082; Emissions.app"
+               ReferencedContainer = "container:CO&#x2082; AR.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -61,10 +61,18 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "3929C4871E89EC2C00E00B60"
-            BuildableName = "ARKitExample.app"
-            ReferencedContainer = "container:ARKitExample.xcodeproj">
+               BuildableName = "CO&#x2082; Emissions.app"
+               ReferencedContainer = "container:CO&#x2082; AR.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
+      <MacroExpansion>
+         <BuildableReference
+            BuildableIdentifier = "primary"
+            BlueprintIdentifier = "3929C4871E89EC2C00E00B60"
+               BuildableName = "CO&#x2082; Emissions.app"
+               ReferencedContainer = "container:CO&#x2082; AR.xcodeproj">
+         </BuildableReference>
+      </MacroExpansion>
    </ProfileAction>
    <AnalyzeAction
       buildConfiguration = "Debug">
